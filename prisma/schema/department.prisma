@@ -1,0 +1,4 @@
+model Department {
+  id   String @id
+  name String
+}

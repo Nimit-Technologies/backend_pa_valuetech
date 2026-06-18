@@ -1,0 +1,4 @@
+model Role {
+  id   String @id
+  name String
+}

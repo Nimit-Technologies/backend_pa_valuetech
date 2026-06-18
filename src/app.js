@@ -1,17 +1,19 @@
 import express from "express";
-import cors from "cors";
+import "dotenv/config";
+import routes from "./index.js";
+import "./prisma/client.js";
 
 const app = express();
-
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || "*" }));
 app.use(express.json());
 
-app.get("/api/health", (req, res) => {
+app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Mount feature routes here as they are built, e.g.:
-// import authRoutes from "./features/auth/auth.routes.js";
-// app.use("/api/auth", authRoutes);
+app.get("/", (req, res) => {
+  res.json({ status: "app is running !!!!!!!!!!!" });
+});
+
+app.use("/api/v1", routes);
 
 export default app;

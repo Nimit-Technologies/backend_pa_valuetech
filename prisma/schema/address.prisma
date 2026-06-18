@@ -1,0 +1,10 @@
+model Address {
+  id       String  @id
+  lane     String?
+  landmark String?
+  city     String
+  district String
+  state    String
+  pinCode  String
+  country  String  @default("India")
+}
