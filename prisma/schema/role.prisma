@@ -1,4 +1,17 @@
 model Role {
-  id   String @id
-  name String
+  id        String  @id @default(cuid())
+  name      String
+  is_active Boolean @default(true)
+
+  branch_id String
+  branch    Branch @relation(fields: [branch_id], references: [id])
+
+  users User[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([name, branch_id])
+  @@index([branch_id])
+  @@map("roles")
 }

@@ -1,11 +1,9 @@
 import { Router } from "express";
-import {
-    getAllDepartments,
-    getDepartmentById,
-    createDepartment,
-    updateDepartment,
-    deleteDepartment,
-} from "./departments.controller.js";
+import { getAllDepartments } from "./controllers/getall.department.js";
+import { getDepartmentById } from "./controllers/get.departmentById.js";
+import { createDepartment } from "./controllers/create.department.js";
+import { updateDepartment } from "./controllers/update.department.js";
+import { deleteDepartment } from "./controllers/delete.department.js";
 
 const router = Router();
 

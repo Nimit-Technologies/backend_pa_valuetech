@@ -1,10 +1,16 @@
 model Address {
-  id       String  @id
+  id       String  @id @default(cuid())
   lane     String?
   landmark String?
   city     String
   district String
   state    String
-  pinCode  String
+  pin_code String
   country  String  @default("India")
+  user User?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  lowercase true
+
+  @@map("addresses")
 }

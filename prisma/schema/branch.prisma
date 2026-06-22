@@ -1,0 +1,12 @@
+model Branch {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  is_active Boolean @default(true)
+  users       User[]
+  departments Department[]
+  roles       Role[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("branches")
+}

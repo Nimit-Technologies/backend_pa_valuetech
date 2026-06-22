@@ -7,8 +7,9 @@
   "scripts": {
     "start": "node ./server.js",
     "dev": "nodemon ./server.js",
+    "//postinstall": "Auto-runs after npm install — generates Prisma Client into src/generated/prisma from schema/",
     "postinstall": "prisma generate",
-    "//migrate": "Run manually when schema.prisma changes — creates SQL migration file and applies it to the DB",
+    "//migrate": "Run manually when schema changes — creates a SQL migration file and applies it to the DB",
     "migrate": "prisma migrate dev"
   },
   "license": "ISC",
