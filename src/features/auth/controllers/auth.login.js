@@ -32,8 +32,8 @@ export const login = async (req, res) => {
       id:          user.id,
       employee_id: user.employee_id,
       role:        user.role,
-      // branch_id:   user.branch_id,
-      // department_id: user.department_id,
+      branch_id:   user.branch_id,
+      department:  user.department,
     };
 
     const token = jwt.sign(payload, CREDENTIALS.JWT_SECRET, { expiresIn: "1d" });
@@ -45,12 +45,12 @@ export const login = async (req, res) => {
       maxAge:   24 * 60 * 60 * 1000,
     });
 
-    const { password: _pwd, ...userWithoutPassword } = user;
+    const { id, employee_id: emp_id, first_name, last_name, branch, department, role } = user;
 
     return res.status(200).json({
       success: true,
       token,
-      data: userWithoutPassword,
+      data: { id, employee_id: emp_id, first_name, last_name, branch, department, role },
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Internal server error" });
