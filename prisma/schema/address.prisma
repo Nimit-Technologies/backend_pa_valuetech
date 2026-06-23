@@ -10,7 +10,7 @@ model Address {
   user User?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  lowercase true
+
 
   @@map("addresses")
 }
