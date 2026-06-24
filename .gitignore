@@ -6,3 +6,6 @@ npm-debug.log*
 .DS_Store
 
 /src/generated/prisma
+.agents/*
+.claude/*
+.idea/*

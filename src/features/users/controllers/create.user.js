@@ -1,17 +1,11 @@
-import { getBranchById }     from "../../branch/services/service.getById.branch.js";
-import { getDepartmentById } from "../../departments/services/service.getById.department.js";
-import { getRoleById }       from "../../roles/services/service.getById.role.js";
-
-import { getUserByEmployeeId }              from "../services/service.getByEmployeeId.js";
-import { createUser as createUserService }  from "../services/service.create.user.js";
-import { userSchema }                       from "../user.schema.js";
-
+import { getUserByEmployeeId }             from "../services/service.getByEmployeeId.js";
+import { createUser as createUserService } from "../services/service.create.user.js";
+import { userSchema }                      from "../user.schema.js";
 import bcrypt from "bcrypt";
 import { CREDENTIALS } from "../../../constant/credentials.js";
 
 export const createUser = async (req, res) => {
   try {
-    // confirm_password is a UI-only field — check before schema validation
     const { confirm_password } = req.body;
     if (!confirm_password) {
       return res.status(400).json({ success: false, message: "Confirm password is required" });
@@ -35,21 +29,6 @@ export const createUser = async (req, res) => {
       return res.status(409).json({ success: false, message: "User with this employee ID already exists" });
     }
 
-    const branch = await getBranchById(branch_id);
-    if (!branch) {
-      return res.status(404).json({ success: false, message: "Branch not found" });
-    }
-
-    const department = await getDepartmentById(department_id);
-    if (!department) {
-      return res.status(404).json({ success: false, message: "Department not found" });
-    }
-
-    const role = await getRoleById(role_id);
-    if (!role) {
-      return res.status(404).json({ success: false, message: "Role not found" });
-    }
-
     const hashedPassword = await bcrypt.hash(password, CREDENTIALS.SALT_ROUNDS);
 
     const user = await createUserService({
@@ -58,12 +37,14 @@ export const createUser = async (req, res) => {
     });
 
     const { password: _, ...userWithoutPassword } = user;
-
     return res.status(201).json({ success: true, data: userWithoutPassword });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = error.meta?.target?.[0];
       return res.status(409).json({ success: false, message: `${field} already exists` });
+    }
+    if (error?.code === "P2025") {
+      return res.status(404).json({ success: false, message: "Branch, department, or role not found" });
     }
     return res.status(500).json({ success: false, message: "Internal server error" });
   }

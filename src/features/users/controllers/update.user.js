@@ -1,17 +1,6 @@
-import { z } from "zod";
-import { getUserById }                   from "../services/service.getById.user.js";
+import { getUserById }                    from "../services/service.getById.user.js";
 import { updateUser as updateUserService } from "../services/service.update.user.js";
-
-const updateUserSchema = z.object({
-  first_name:    z.string().min(1).max(50).optional(),
-  last_name:     z.string().min(1).max(50).optional(),
-  email:         z.string().email().max(100).optional(),
-  phone:         z.string().min(10).max(15).optional(),
-  branch_id:     z.string().min(1).optional(),
-  department_id: z.string().min(1).optional(),
-  role_id:       z.string().min(1).optional(),
-  is_active:     z.boolean().optional(),
-}).strict();
+import { updateUserSchema }               from "../user.schema.js";
 
 export const updateUser = async (req, res) => {
   try {
@@ -33,6 +22,9 @@ export const updateUser = async (req, res) => {
     if (error?.code === "P2002") {
       const field = error.meta?.target?.[0];
       return res.status(409).json({ success: false, message: `${field} already exists` });
+    }
+    if (error?.code === "P2025") {
+      return res.status(404).json({ success: false, message: "Branch, department, or role not found" });
     }
     res.status(500).json({ success: false, message: "Failed to update user" });
   }

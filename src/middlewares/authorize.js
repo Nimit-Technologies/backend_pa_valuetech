@@ -5,6 +5,10 @@ export const isSuperAdmin = (req, res, next) => {
   if (req.user?.role?.name === "super-admin") return next();
   return deny(res);
 };
+export const isAdmin = (req, res, next) => {
+  if (req.user?.role?.name === "super-admin" || req.user?.role?.name === "branch-admin") return next();
+  return deny(res);
+};
 
 export const isBranchAdmin = (req, res, next) => {
   if (req.user?.role?.name === "branch-admin") return next();

@@ -16,7 +16,7 @@ export const login = async (req, res) => {
 
     const user = await findUserForLogin(employee_id);
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res.status(401).json({ success: false, message: "user- Invalid credentials" });
     }
 
     if (!user.is_active) {
