@@ -2,10 +2,10 @@ import { z } from "zod";
 import { addressSchema } from "../address/address.schema.js";
 
 export const userSchema = z.object({
-  employee_id:   z.string().min(1, "Employee ID is required").max(50).transform((val) => val.trim()),
+  employee_id:   z.string().min(1, "Employee ID is required").max(50).transform((val) => val.trim().toLowerCase()),
   first_name:    z.string().min(1, "First name is required").max(50).transform((val) => val.trim().toLowerCase()),
   last_name:     z.string().min(1, "Last name is required").max(50).transform((val) => val.trim().toLowerCase()),
-  email:         z.string().email("Invalid email format").max(100).optional(),
+  email:         z.string().email("Invalid email format").max(100).transform((val) => val.trim().toLowerCase()).optional(),
   phone:         z.string().min(10, "Phone number is required").max(10, "Phone number must be 10 digits").regex(/^\d+$/, "Phone number must contain only digits"),
   password: z
     .string()
@@ -29,7 +29,7 @@ export const userSchema = z.object({
 export const updateUserSchema = z.object({
   first_name:    z.string().min(1).max(50).transform((val) => val.trim().toLowerCase()).optional(),
   last_name:     z.string().min(1).max(50).transform((val) => val.trim().toLowerCase()).optional(),
-  email:         z.string().email().max(100).optional(),
+  email:         z.string().email().max(100).transform((val) => val.trim().toLowerCase()).optional(),
   phone:         z.string().length(10, "Phone number must be 10 digits").regex(/^\d+$/, "Phone must contain only digits").optional(),
   branch_id:     z.string().min(1).optional(),
   department_id: z.string().min(1).optional(),
