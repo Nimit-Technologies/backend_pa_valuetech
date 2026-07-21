@@ -5,6 +5,7 @@ model Branch {
   users       User[]
   departments Department[]
   roles       Role[]
+  cases       Case[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 

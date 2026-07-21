@@ -7,7 +7,8 @@ model Address {
   state    String
   pin_code String
   country  String  @default("India")
-  user User?
+  user  User?
+  cases Case[]
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 

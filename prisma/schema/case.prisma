@@ -1,0 +1,39 @@
+model Case {
+  id String @id @default(cuid())
+
+  branch_id     String
+  user_id       String
+  address_id    String
+  created_by_id String
+
+  branch     Branch  @relation(fields: [branch_id], references: [id])
+  user       User    @relation("CaseUser", fields: [user_id], references: [id])
+  address    Address @relation(fields: [address_id], references: [id])
+  created_by User    @relation("CaseCreatedBy", fields: [created_by_id], references: [id])
+
+  update_history CaseUpdateHistory[]
+
+  created_at DateTime @default(now())
+
+  @@index([branch_id])
+  @@index([user_id])
+  @@index([address_id])
+  @@index([created_by_id])
+  @@map("cases")
+}
+
+model CaseUpdateHistory {
+  id String @id @default(cuid())
+
+  case_id       String
+  updated_by_id String
+
+  case       Case @relation(fields: [case_id], references: [id])
+  updated_by User @relation(fields: [updated_by_id], references: [id])
+
+  updated_at DateTime @default(now())
+
+  @@index([case_id])
+  @@index([updated_by_id])
+  @@map("case_update_histories")
+}

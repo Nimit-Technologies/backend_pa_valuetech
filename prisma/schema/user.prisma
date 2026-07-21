@@ -19,6 +19,10 @@ model User {
   role       Role       @relation(fields: [role_id], references: [id])
   address    Address    @relation(fields: [address_id], references: [id])
 
+  cases                 Case[]              @relation("CaseUser")
+  cases_created         Case[]              @relation("CaseCreatedBy")
+  case_update_histories CaseUpdateHistory[]
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
