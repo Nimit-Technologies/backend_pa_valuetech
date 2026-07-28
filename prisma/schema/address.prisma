@@ -1,17 +1,17 @@
 model Address {
-  id       String  @id @default(cuid())
-  lane     String?
-  landmark String?
-  city     String
-  district String
-  state    String
-  pin_code String
-  country  String  @default("India")
-  user  User?
-  cases Case[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
+  id         String    @id @default(cuid())
+  lane       String?
+  landmark   String?
+  city       String
+  district   String
+  state      String
+  pin_code   String
+  country    String    @default("India")
+  user       User?
+  bank       Bank?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
 
   @@map("addresses")
 }

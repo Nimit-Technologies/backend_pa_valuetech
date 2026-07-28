@@ -18,9 +18,18 @@ export const updateBranch = async (req, res) => {
             return res.status(404).json({ success: false, message: "Branch not found" });
         }
 
+        if (existing.deleted_at) {
+            return res.status(409).json({ success: false, message: "Branch is soft-deleted; restore it before updating" });
+        }
+
+        if (existing.name === name) {
+            return res.json({ success: true, message: "No changes are found" });
+        }
+
         const branch = await updateBranchService(id, name);
         res.json({ success: true, data: branch });
     } catch (error) {
+        console.error("updateBranch error:", error);
         res.status(500).json({ success: false, message: "Failed to update branch" });
     }
 };

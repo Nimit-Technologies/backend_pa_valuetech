@@ -19,6 +19,7 @@ export const createBranch = async (req, res) => {
         const branch = await createBranchService(name);
         res.status(201).json({ success: true, data: branch });
     } catch (error) {
+        console.error("createBranch error:", error);
         res.status(500).json({ success: false, message: "Failed to create branch" });
     }
 };

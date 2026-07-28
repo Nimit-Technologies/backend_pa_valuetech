@@ -1,12 +1,15 @@
 model Department {
-  id        String  @id @default(cuid())
-  name      String
-  is_active Boolean @default(true)
-  branch_id String
-  branch    Branch @relation(fields: [branch_id], references: [id])
-  users User[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         String    @id @default(cuid())
+  name       String
+  is_active  Boolean   @default(true)
+  branch_id  String
+  branch     Branch    @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  users      User[]
+  roles      Role[]
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
   @@unique([name, branch_id])
   @@index([branch_id])
   @@map("departments")

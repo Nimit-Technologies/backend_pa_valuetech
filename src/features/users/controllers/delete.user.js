@@ -13,6 +13,9 @@ export const deleteUser = async (req, res) => {
     await deleteUserService(id);
     res.json({ success: true, message: "User deleted successfully" });
   } catch (error) {
+    if (error?.code === "P2003" || error?.code === "P2014") {
+      return res.status(409).json({ success: false, message: "Cannot delete user: it is still referenced by other records" });
+    }
     console.error("deleteUser error:", error);
     res.status(500).json({ success: false, message: "Failed to delete user" });
   }

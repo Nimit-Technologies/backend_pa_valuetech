@@ -8,7 +8,7 @@ export const getAllUsers = ({ take = 20, cursor } = {}) => {
     take,
     select: {
       id: true, employee_id: true, first_name: true, last_name: true,
-      email: true, phone: true, adhar_number: true, is_active: true,
+      email: true, phone: true, aadhaar_number: true, is_active: true,
       branch:      relationSelect,
       department:  relationSelect,
       role:        relationSelect,

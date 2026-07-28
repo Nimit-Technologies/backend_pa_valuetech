@@ -13,3 +13,6 @@ npm-debug.log*
 .agents/*
 .claude/*
 .idea/*
+tests/*
+.cr_wt_diff.txt
+full_diff_copy.diff

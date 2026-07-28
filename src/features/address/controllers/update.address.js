@@ -19,6 +19,7 @@ export const updateAddress = async (req, res) => {
         const address = await updateAddressService(id, parsed.data);
         res.json({ success: true, data: address });
     } catch (error) {
+        console.error("updateAddress error:", error);
         res.status(500).json({ success: false, message: "Failed to update address" });
     }
 };

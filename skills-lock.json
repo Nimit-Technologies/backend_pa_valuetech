@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "nodejs-best-practices": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "skillPath": "cli-tool/components/skills/development/nodejs-best-practices/SKILL.md",
+      "computedHash": "a942c5fc15af3e9f80bf7d338d31c8eeff411b5430995211ef3b975e63c3c929"
+    },
+    "nodejs-express-server": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "skillPath": "skills/nodejs-express-server/SKILL.md",
+      "computedHash": "8a7fe50351131f99b7bc7750bb4be6e7cbd7919b3b346c8fc7f857fb1ecad059"
+    },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",

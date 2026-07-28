@@ -25,6 +25,7 @@ export const isAuthenticated = (req, res, next) => {
       return res.status(401).json({ success: false, message: "Token not yet active." });
     }
 
+    console.error("isAuthenticated error:", error);
     return res.status(500).json({ success: false, message: "Internal server error." });
   }
 };

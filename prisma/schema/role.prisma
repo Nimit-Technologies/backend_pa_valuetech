@@ -3,15 +3,16 @@ model Role {
   name      String
   is_active Boolean @default(true)
 
-  branch_id String
-  branch    Branch @relation(fields: [branch_id], references: [id])
+  department_id String
+  department    Department @relation(fields: [department_id], references: [id], onDelete: Restrict)
 
   users User[]
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
 
-  @@unique([name, branch_id])
-  @@index([branch_id])
+  @@unique([name, department_id])
+  @@index([department_id])
   @@map("roles")
 }

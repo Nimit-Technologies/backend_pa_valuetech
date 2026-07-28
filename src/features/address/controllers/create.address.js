@@ -11,6 +11,7 @@ export const createAddress = async (req, res) => {
         const address = await createAddressService(parsed.data);
         res.status(201).json({ success: true, data: address });
     } catch (error) {
+        console.error("createAddress error:", error);
         res.status(500).json({ success: false, message: "Failed to create address" });
     }
 };

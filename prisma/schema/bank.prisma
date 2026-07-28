@@ -1,0 +1,20 @@
+model Bank {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  display_name String
+  gst_number   String
+  branch_code  String
+  is_active    Boolean @default(true)
+  branch_id    String
+  branch       Branch  @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  address_id   String  @unique
+  address      Address @relation(fields: [address_id], references: [id])
+
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  @@index([branch_id])
+  @@map("banks")
+}
