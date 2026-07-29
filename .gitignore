@@ -12,7 +12,3 @@ npm-debug.log*
 /src/generated/prisma
 .agents/*
 .claude/*
-.idea/*
-tests/*
-.cr_wt_diff.txt
-full_diff_copy.diff
