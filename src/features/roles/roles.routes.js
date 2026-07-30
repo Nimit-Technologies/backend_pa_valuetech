@@ -14,7 +14,7 @@ const router = Router();
 
 router.get("/all-role", isAuthenticated, isAdmin, getAllRoles);
 router.get("/:id", isAuthenticated, isAdmin, getRoleById);
-router.post("/create-role",createRole);
+router.post("/create-role",isAuthenticated,isAdmin,createRole);
 router.put("/update/:id", isAuthenticated, isAdmin, updateRole);
 router.delete("/soft-delete/:id", isAuthenticated, isAdmin, softDeleteRole);
 router.patch("/status/:id", isAuthenticated, isAdmin, updateRoleStatus);
