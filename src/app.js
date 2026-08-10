@@ -1,5 +1,5 @@
-import express      from "express";
-import cookieParser  from "cookie-parser";
+import express from "express";
+import cookieParser from "cookie-parser";
 import "dotenv/config";
 import routes from "./index.js";
 import "./prisma/client.js";

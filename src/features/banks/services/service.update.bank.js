@@ -13,7 +13,7 @@ export const updateBank = (id, data) => {
       ...(address && { address: { update: address } }),
     },
     include: {
-      branch:  branchSelect,
+      branch: branchSelect,
       address: true,
     },
   });

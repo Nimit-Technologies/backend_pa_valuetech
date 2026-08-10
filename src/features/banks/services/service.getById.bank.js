@@ -4,7 +4,7 @@ export const getBankById = (id) => {
   return prisma.bank.findUnique({
     where: { id },
     include: {
-      branch:  { select: { id: true, name: true } },
+      branch: { select: { id: true, name: true } },
       address: true,
     },
   });

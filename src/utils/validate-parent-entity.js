@@ -9,7 +9,10 @@ export const respondIfInvalidParent = (res, entity, { label, action }) => {
     return true;
   }
   if (!entity.is_active || entity.deleted_at) {
-    res.status(409).json({ success: false, message: `${label} is inactive or deleted; cannot ${action}` });
+    res.status(409).json({
+      success: false,
+      message: `${label} is inactive or deleted; cannot ${action}`,
+    });
     return true;
   }
   return false;

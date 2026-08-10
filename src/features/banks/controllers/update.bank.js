@@ -15,31 +15,43 @@ export const updateBank = async (req, res) => {
     if (!parsed.success) {
       console.error(
         `updateBank validation error for bank ${id}:`,
-        JSON.stringify(parsed.error.issues, null, 2)
+        JSON.stringify(parsed.error.issues, null, 2),
       );
       return res.status(400).json({
         success: false,
-        message: "Invalid request data. Please check the fields you're trying to update.",
+        message:
+          "Invalid request data. Please check the fields you're trying to update.",
         errors: parsed.error.issues,
       });
     }
 
     const existing = await getBankById(id);
     if (!existing) {
-      return res.status(404).json({ success: false, message: "Bank not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Bank not found" });
     }
 
     const { name, branch_id } = parsed.data;
 
     if (branch_id) {
       const branch = await getBranchById(branch_id);
-      if (respondIfInvalidParent(res, branch, { label: "Branch", action: "reassign bank to it" })) return;
+      if (
+        respondIfInvalidParent(res, branch, {
+          label: "Branch",
+          action: "reassign bank to it",
+        })
+      )
+        return;
     }
 
     if (name) {
       const duplicate = await findBankByName(name);
       if (duplicate && duplicate.id !== id) {
-        return res.status(409).json({ success: false, message: "Bank with this name already exists" });
+        return res.status(409).json({
+          success: false,
+          message: "Bank with this name already exists",
+        });
       }
     }
 
@@ -48,8 +60,12 @@ export const updateBank = async (req, res) => {
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);
-      console.error(`updateBank error: bank with this ${UNIQUE_FIELD_LABELS[field] ?? field} already exists`);
-      return res.status(409).json({ success: false, message: "Bank already exists" });
+      console.error(
+        `updateBank error: bank with this ${UNIQUE_FIELD_LABELS[field] ?? field} already exists`,
+      );
+      return res
+        .status(409)
+        .json({ success: false, message: "Bank already exists" });
     }
     console.error("updateBank error:", error);
     res.status(500).json({ success: false, message: "Failed to update bank" });

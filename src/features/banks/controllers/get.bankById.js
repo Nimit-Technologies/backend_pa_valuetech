@@ -6,7 +6,9 @@ export const getBankById = async (req, res) => {
     const bank = await getBankByIdService(id);
 
     if (!bank) {
-      return res.status(404).json({ success: false, message: "Bank not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Bank not found" });
     }
 
     res.json({ success: true, data: bank });

@@ -9,16 +9,23 @@ export const updateRole = async (req, res) => {
 
     const parsed = updateRoleSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ success: false, errors: parsed.error.issues });
+      return res
+        .status(400)
+        .json({ success: false, errors: parsed.error.issues });
     }
 
     const existing = await getRoleById(id);
     if (!existing) {
-      return res.status(404).json({ success: false, message: "Role not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Role not found" });
     }
 
     if (existing.deleted_at) {
-      return res.status(409).json({ success: false, message: "Role is soft-deleted; restore it before updating" });
+      return res.status(409).json({
+        success: false,
+        message: "Role is soft-deleted; restore it before updating",
+      });
     }
 
     const { name } = parsed.data;
@@ -26,7 +33,10 @@ export const updateRole = async (req, res) => {
     if (name) {
       const duplicate = await findRoleByName(name, existing.department_id);
       if (duplicate && duplicate.id !== id) {
-        return res.status(409).json({ success: false, message: "Role with this name already exists in this department" });
+        return res.status(409).json({
+          success: false,
+          message: "Role with this name already exists in this department",
+        });
       }
     }
 
