@@ -1,7 +1,7 @@
 import prisma from "../../../prisma/client.js";
 
 export const findUserForLogin = (employee_id) => {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: { employee_id },
     include: {
       role: { select: { id: true, name: true } },

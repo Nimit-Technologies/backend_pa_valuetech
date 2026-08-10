@@ -13,7 +13,8 @@
     "//postinstall": "Auto-runs after npm install — generates Prisma Client into src/generated/prisma from schema/",
     "postinstall": "prisma generate",
     "//migrate": "Run manually when schema changes — creates a SQL migration file and applies it to the DB",
-    "migrate": "prisma migrate dev"
+    "migrate": "prisma migrate dev",
+    "studio": "npx prisma studio"
   },
   "license": "ISC",
   "dependencies": {
@@ -24,6 +25,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.21.0",
     "zod": "^4.4.3"

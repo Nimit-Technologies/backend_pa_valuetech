@@ -1,0 +1,83 @@
+model Case {
+  id String @id @default(cuid())
+
+  // Not @@unique: uniqueness of [file_number, branch_id] is enforced only among
+  // non-deleted rows via a partial unique index (see migration SQL), so a
+  // soft-deleted case's file_number can be reused within the same branch.
+  file_number             String
+  banker_name             String
+  customer_name           String
+  customer_contact_number String
+  case_type               String
+
+  business_type_id String
+  
+  bank_id          String
+  branch_id        String
+  user_id          String
+  address_id       String
+  created_by_id    String
+  deleted_by_id    String?
+
+  branch        Branch       @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  bank          Bank         @relation(fields: [bank_id], references: [id], onDelete: Restrict)
+  user          User         @relation("CaseUser", fields: [user_id], references: [id], onDelete: Restrict)
+  address       Address      @relation(fields: [address_id], references: [id], onDelete: Restrict)
+  created_by    User         @relation("CaseCreatedBy", fields: [created_by_id], references: [id], onDelete: Restrict)
+  deleted_by    User?        @relation("CaseDeletedBy", fields: [deleted_by_id], references: [id], onDelete: Restrict)
+  business_type BusinessType @relation(fields: [business_type_id], references: [id], onDelete: Restrict)
+
+  // Snapshot of the creator's identity at the moment the case was created.
+  // Immutable audit trail: must not change if the user/role/department is later edited.
+  created_by_first_name  String
+  created_by_employee_id String
+  created_by_role        String
+  created_by_department  String
+
+  // Snapshot of the delete's identity at the moment the case was deleted.
+  deleted_by_first_name  String?
+  deleted_by_employee_id String?
+  deleted_by_role        String?
+  deleted_by_department  String?
+
+  update_history CaseUpdateHistory[]
+  remarks        Remark[]
+  allocations    Allocation[]
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  @@index([file_number, branch_id])
+  @@index([branch_id])
+  @@index([user_id])
+  @@index([address_id])
+  @@index([created_by_id])
+  @@index([deleted_by_id])
+  @@index([business_type_id])
+  @@index([bank_id])
+  @@map("cases")
+}
+
+model CaseUpdateHistory {
+  id String @id @default(cuid())
+
+  case_id       String
+  updated_by_id String
+
+  case       Case @relation(fields: [case_id], references: [id], onDelete: Restrict)
+  updated_by User @relation(fields: [updated_by_id], references: [id], onDelete: Restrict)
+
+  // Snapshot of the updater's identity at the moment of this update.
+  // Immutable audit trail: must not change if the user/role/department is later edited.
+  first_name  String
+  employee_id String
+  role        String
+  department  String
+
+  updated_at DateTime @default(now())
+
+  @@index([case_id])
+  @@index([updated_by_id])
+  @@map("case_update_histories")
+}

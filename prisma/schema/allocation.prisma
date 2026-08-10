@@ -1,0 +1,40 @@
+model Allocation {
+  id String @id @default(cuid())
+
+  case_id String
+  user_id String
+  role_id String
+
+  status_id String
+
+  allocated_by_id String
+
+  // Explicit stage order within the case's workflow (e.g. 1 = Engineer, 2 = Drafter, 3 = Appraiser).
+  // Do not rely on allocated_at for ordering — it's ambiguous under same-millisecond inserts.
+  sequence Int
+
+  case   Case   @relation(fields: [case_id], references: [id], onDelete: Restrict)
+  user   User   @relation("AllocationUser", fields: [user_id], references: [id], onDelete: Restrict)
+  role   Role   @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  status Status @relation(fields: [status_id], references: [id], onDelete: Restrict)
+
+  allocated_by User @relation("AllocationAllocatedBy", fields: [allocated_by_id], references: [id], onDelete: Restrict)
+
+  // Snapshot of the assigner's identity at the moment the allocation was made.
+  // Immutable audit trail: must not change if the user/role/department is later edited.
+  allocated_by_first_name  String
+  allocated_by_employee_id String
+  allocated_by_role        String
+  allocated_by_department  String
+
+  allocated_at DateTime  @default(now())
+  completed_at DateTime?
+
+  @@unique([case_id, sequence])
+  @@index([case_id])
+  @@index([user_id])
+  @@index([role_id])
+  @@index([status_id])
+  @@index([allocated_by_id])
+  @@map("allocations")
+}

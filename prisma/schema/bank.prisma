@@ -8,12 +8,17 @@ model Bank {
   branch_id    String
   branch       Branch  @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   address_id   String  @unique
-  address      Address @relation(fields: [address_id], references: [id])
+  address      Address @relation(fields: [address_id], references: [id], onDelete: Restrict)
+
+  cases Case[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
   @@index([branch_id])
+  @@index([name])
+  @@index([gst_number])
+  @@index([branch_code])
   @@map("banks")
 }

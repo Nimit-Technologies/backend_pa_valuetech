@@ -29,6 +29,8 @@ const fail = (res, status, message, extra = {}) =>
 const buildTokenPayload = (user) => ({
   id: user.id,
   employee_id: user.employee_id,
+  first_name: user.first_name,
+  last_name: user.last_name,
   role: user.role,
   branch: { id: user.branch.id, name: user.branch.name },
   department: user.department,
@@ -39,6 +41,7 @@ const buildUserResponse = (user) => ({
   employee_id: user.employee_id,
   first_name: user.first_name,
   last_name: user.last_name,
+  phone: user.phone,
   branch: { branch_id: user.branch.id, name: user.branch.name },
   department: user.department,
   role: user.role,

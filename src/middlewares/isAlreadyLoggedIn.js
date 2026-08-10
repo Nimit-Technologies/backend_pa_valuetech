@@ -16,6 +16,8 @@ export const isAlreadyLoggedIn = (req, res, next) => {
       data: {
         id:          decoded.id,
         employee_id: decoded.employee_id,
+        first_name:  decoded.first_name,
+        last_name:   decoded.last_name,
         branch:      decoded.branch,
         department:  decoded.department,
         role:        decoded.role,

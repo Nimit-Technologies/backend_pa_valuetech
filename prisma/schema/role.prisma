@@ -1,18 +1,20 @@
 model Role {
   id        String  @id @default(cuid())
-  name      String
+  name      String  @unique
   is_active Boolean @default(true)
 
   department_id String
   department    Department @relation(fields: [department_id], references: [id], onDelete: Restrict)
 
-  users User[]
+  users       User[]
+  remarks     Remark[]
+  allocations Allocation[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  @@unique([name, department_id])
+  @@index([name, department_id])
   @@index([department_id])
   @@map("roles")
 }

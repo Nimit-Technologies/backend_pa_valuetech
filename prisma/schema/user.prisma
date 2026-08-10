@@ -6,7 +6,7 @@ model User {
   email          String? @unique
   phone          String  @unique
   password       String
-  aadhaar_number String  @unique
+  aadhaar_number String @unique
   is_active      Boolean @default(true)
 
   branch_id     String
@@ -17,14 +17,27 @@ model User {
   branch     Branch     @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   department Department @relation(fields: [department_id], references: [id], onDelete: Restrict)
   role       Role       @relation(fields: [role_id], references: [id], onDelete: Restrict)
-  address    Address    @relation(fields: [address_id], references: [id])
+  address    Address    @relation(fields: [address_id], references: [id], onDelete: Restrict)
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  remarks       Remark[]
+  cases         Case[]   @relation("CaseUser")
+  created_cases Case[]   @relation("CaseCreatedBy")
+  deleted_cases Case[]   @relation("CaseDeletedBy")
+
+  allocations      Allocation[] @relation("AllocationUser")
+  allocations_made Allocation[] @relation("AllocationAllocatedBy")
+
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
+  deleted_at            DateTime?
+  case_update_histories CaseUpdateHistory[]
 
   @@index([branch_id])
   @@index([department_id])
   @@index([role_id])
+  @@index([employee_id])
+  @@index([email])
+  @@index([phone])
+  @@index([aadhaar_number])
   @@map("users")
 }
