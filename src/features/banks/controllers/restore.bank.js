@@ -7,15 +7,23 @@ export const restoreBank = async (req, res) => {
 
     const existing = await getBankById(id);
     if (!existing) {
-      return res.status(404).json({ success: false, message: "Bank not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Bank not found" });
     }
 
     if (!existing.deleted_at) {
-      return res.status(409).json({ success: false, message: "Bank is not soft-deleted" });
+      return res
+        .status(409)
+        .json({ success: false, message: "Bank is not soft-deleted" });
     }
 
     const bank = await restoreBankService(id);
-    res.json({ success: true, message: "Bank restored successfully", data: bank });
+    res.json({
+      success: true,
+      message: "Bank restored successfully",
+      data: bank,
+    });
   } catch (error) {
     console.error("restoreBank error:", error);
     res.status(500).json({ success: false, message: "Failed to restore bank" });

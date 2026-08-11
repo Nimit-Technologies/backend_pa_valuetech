@@ -16,7 +16,13 @@ export const createDepartment = async (req, res) => {
 
     const { name, branch_id } = parsed.data;
     const branch = await getBranchById(branch_id);
-    if (respondIfInvalidParent(res, branch, { label: "Branch", action: "assign new departments to it" })) return;
+    if (
+      respondIfInvalidParent(res, branch, {
+        label: "Branch",
+        action: "assign new departments to it",
+      })
+    )
+      return;
 
     const existing = await findDepartmentByName(name, branch_id);
     if (existing) {

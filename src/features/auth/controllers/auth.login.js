@@ -32,6 +32,7 @@ const buildTokenPayload = (user) => ({
   first_name: user.first_name,
   last_name: user.last_name,
   role: user.role,
+  phone: user.phone,
   branch: { id: user.branch.id, name: user.branch.name },
   department: user.department,
 });

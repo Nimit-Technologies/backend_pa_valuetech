@@ -6,7 +6,9 @@ export const getUserById = async (req, res) => {
     const user = await getUserByIdService(id);
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     res.json({ success: true, data: user });

@@ -14,7 +14,7 @@ export const isAlreadyLoggedIn = (req, res, next) => {
       success: true,
       message: "Already logged in",
       data: {
-        id:          decoded.id,
+        id: decoded.id,
         employee_id: decoded.employee_id,
         first_name:  decoded.first_name,
         last_name:   decoded.last_name,
@@ -23,11 +23,11 @@ export const isAlreadyLoggedIn = (req, res, next) => {
         role:        decoded.role,
       },
     });
-  } catch (error) {
+  } catch {
     // missing/expired/invalid token — clear it and let the request through to login
     res.clearCookie("token", {
       httpOnly: true,
-      secure:   process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     });
     return next();

@@ -7,7 +7,7 @@ import { isAuthenticated }   from "../../middlewares/isAuthenticated.js";
 
 const router = Router();
 
-router.post("/login",  isAlreadyLoggedIn, login);
+router.post("/login", isAlreadyLoggedIn, login);
 router.post("/logout", logout);
 router.get("/session", isAuthenticated, session);
 

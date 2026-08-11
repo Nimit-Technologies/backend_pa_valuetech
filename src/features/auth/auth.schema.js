@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  employee_id: z.string().min(1, "Employee ID is required").trim().toLowerCase(),
-  password:    z.string().min(1, "Password is required"),
+  employee_id: z
+    .string()
+    .min(1, "Employee ID is required")
+    .trim()
+    .toLowerCase(),
+  password: z.string().min(1, "Password is required"),
 });

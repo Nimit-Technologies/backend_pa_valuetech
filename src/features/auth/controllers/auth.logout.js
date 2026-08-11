@@ -19,7 +19,7 @@ export const logout = (req, res) => {
 
   try {
     jwt.verify(token, CREDENTIALS.JWT_SECRET);
-  } catch (error) {
+  } catch {
     // invalid/expired token; cookie is cleared below regardless of outcome
   }
 

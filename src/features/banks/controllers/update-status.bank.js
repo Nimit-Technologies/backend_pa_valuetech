@@ -7,18 +7,29 @@ export const updateBankStatus = async (req, res) => {
 
     const existing = await getBankById(id);
     if (!existing) {
-      return res.status(404).json({ success: false, message: "Bank not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Bank not found" });
     }
 
     if (existing.deleted_at) {
-      return res.status(409).json({ success: false, message: "Bank is soft-deleted; restore it before changing status" });
+      return res.status(409).json({
+        success: false,
+        message: "Bank is soft-deleted; restore it before changing status",
+      });
     }
 
     const is_active = !existing.is_active;
     const bank = await setBankStatus(id, is_active);
-    res.json({ success: true, message: `Bank ${is_active ? "activated" : "deactivated"} successfully`, data: bank });
+    res.json({
+      success: true,
+      message: `Bank ${is_active ? "activated" : "deactivated"} successfully`,
+      data: bank,
+    });
   } catch (error) {
     console.error("updateBankStatus error:", error);
-    res.status(500).json({ success: false, message: "Failed to update bank status" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update bank status" });
   }
 };
