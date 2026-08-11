@@ -6,6 +6,11 @@ export const getAllUsers = ({ take = 20, cursor } = {}) => {
   return prisma.user.findMany({
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     take,
+    omit: {
+      user: {
+        password: true,
+      },
+    },
     select: {
       id: true,
       employee_id: true,
