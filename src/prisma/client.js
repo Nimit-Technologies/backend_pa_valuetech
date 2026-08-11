@@ -10,7 +10,15 @@ if (!process.env.DATABASE_URL) {
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({
- 
+  // Default: never return the password hash from a `user` query. Individual
+  // queries that legitimately need it (e.g. login) opt back in with
+  // `omit: { password: false }` at the query level — see
+  // features/auth/services/service.auth.login.js.
+  omit: {
+    user: {
+      password: true,
+    },
+  },
   adapter,
 });
 

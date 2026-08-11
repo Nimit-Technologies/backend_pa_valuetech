@@ -6,11 +6,9 @@ export const getAllUsers = ({ take = 20, cursor } = {}) => {
   return prisma.user.findMany({
     ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     take,
-    omit: {
-      user: {
-        password: true,
-      },
-    },
+    // No `omit` needed here: `select` below is an explicit allow-list that
+    // already excludes `password`, and Prisma disallows using `omit` and
+    // `select` together at the same query level.
     select: {
       id: true,
       employee_id: true,
