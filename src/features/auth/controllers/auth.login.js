@@ -30,6 +30,7 @@ const buildTokenPayload = (user) => ({
   id: user.id,
   employee_id: user.employee_id,
   role: user.role,
+  phone: user.phone,
   branch: { id: user.branch.id, name: user.branch.name },
   department: user.department,
 });
@@ -39,6 +40,8 @@ const buildUserResponse = (user) => ({
   employee_id: user.employee_id,
   first_name: user.first_name,
   last_name: user.last_name,
+  phone: user.phone,
+  is_active: user.is_active,
   branch: { branch_id: user.branch.id, name: user.branch.name },
   department: user.department,
   role: user.role,
