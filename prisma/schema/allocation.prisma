@@ -6,6 +6,7 @@ model Allocation {
   role_id String
 
   status_id String
+  business_type_id String
 
   allocated_by_id String
 
@@ -17,6 +18,7 @@ model Allocation {
   user   User   @relation("AllocationUser", fields: [user_id], references: [id], onDelete: Restrict)
   role   Role   @relation(fields: [role_id], references: [id], onDelete: Restrict)
   status Status @relation(fields: [status_id], references: [id], onDelete: Restrict)
+  business_type BusinessType @relation(fields: [business_type_id], references: [id], onDelete: Restrict)
 
   allocated_by User @relation("AllocationAllocatedBy", fields: [allocated_by_id], references: [id], onDelete: Restrict)
 

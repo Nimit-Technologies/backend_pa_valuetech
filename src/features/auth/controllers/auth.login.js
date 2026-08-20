@@ -3,16 +3,8 @@ import jwt from "jsonwebtoken";
 import { loginSchema } from "../auth.schema.js";
 import { findUserForLogin } from "../services/service.auth.login.js";
 import { CREDENTIALS } from "../../../constant/credentials.js";
-
-const TOKEN_TTL_SECONDS = 24 * 60 * 60;
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge: TOKEN_TTL_SECONDS * 1000,
-  path: "/",
-};
+import { TOKEN_TTL_SECONDS, COOKIE_OPTIONS } from "../../../constant/cookie-option.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 // Pre-computed hash used to equalize response time when the user
 // doesn't exist (prevents user-enumeration via timing analysis).
@@ -37,15 +29,16 @@ const buildTokenPayload = (user) => ({
   department: user.department,
 });
 
+
 const buildUserResponse = (user) => ({
   id: user.id,
   employee_id: user.employee_id,
   first_name: user.first_name,
   last_name: user.last_name,
+  role: user.role,
   phone: user.phone,
   branch: { branch_id: user.branch.id, name: user.branch.name },
   department: user.department,
-  role: user.role,
 });
 
 export const login = async (req, res) => {
@@ -76,6 +69,12 @@ export const login = async (req, res) => {
     const passwordMatches = await bcrypt.compare(password, hashToCompare);
 
     if (!user || !user.password || !passwordMatches) {
+      logAuthEvent("login_failed", {
+        employee_id,
+        ip: req.ip,
+        success: false,
+        reason: "invalid_credentials",
+      });
       return fail(res, 401, INVALID_CREDENTIALS);
     }
 
@@ -83,6 +82,13 @@ export const login = async (req, res) => {
     //    Checked *after* the password so this state is only revealed to
     //    someone who actually knows the credentials.
     if (!user.is_active || user.deleted_at) {
+      logAuthEvent("login_failed", {
+        employee_id,
+        user_id: user.id,
+        ip: req.ip,
+        success: false,
+        reason: "account_inactive",
+      });
       return fail(
         res,
         403,
@@ -93,6 +99,7 @@ export const login = async (req, res) => {
     // 5. Issue the token
     const token = jwt.sign(buildTokenPayload(user), CREDENTIALS.JWT_SECRET, {
       expiresIn: TOKEN_TTL_SECONDS,
+      algorithm: "HS256",
     });
 
     // 6. Deliver it via httpOnly cookie ONLY.
@@ -101,6 +108,13 @@ export const login = async (req, res) => {
     //    (If you also serve a mobile app that needs a bearer token,
     //    give it a separate endpoint or content negotiation.)
     res.cookie("token", token, COOKIE_OPTIONS);
+
+    logAuthEvent("login", {
+      employee_id: user.employee_id,
+      user_id: user.id,
+      ip: req.ip,
+      success: true,
+    });
 
     return res.status(200).json({
       success: true,

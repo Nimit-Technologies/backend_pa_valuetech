@@ -34,7 +34,7 @@ const sendErrorProd = (err, res) => {
     // Programming or other unknown error: don't leak details
     else {
         // 1) Log error
-        console.error('ERROR 💥', err);
+        console.error('ERROR', err);
 
         // 2) Send generic message
         res.status(500).json({
@@ -46,6 +46,20 @@ const sendErrorProd = (err, res) => {
 };
 
 export const globalErrorHandler = (err, req, res, next) => {
+    // Defensive: this is the last error handler in the chain, so if
+    // something upstream does `throw "a string"` / `throw { ... }` instead
+    // of `throw new Error(...)`, `err` won't be an Error instance. Assigning
+    // `err.statusCode` on a primitive throws (ES modules are always strict
+    // mode), which would otherwise blow up this handler itself. AppError,
+    // ZodError, and Prisma's errors are all real Error subclasses, so this
+    // only ever kicks in for a genuinely non-Error throw.
+    if (!(err instanceof Error)) {
+        err = new Error(
+            typeof err === 'string' ? err : 'Non-Error value thrown',
+            { cause: err },
+        );
+    }
+
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
 

@@ -1,11 +1,7 @@
 import jwt from "jsonwebtoken";
 import { CREDENTIALS } from "../../../constant/credentials.js";
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-};
+import { COOKIE_OPTIONS } from "../../../constant/cookie-option.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const logout = (req, res) => {
   const token = req.cookies?.token;
@@ -17,11 +13,21 @@ export const logout = (req, res) => {
       .json({ success: false, message: "Please login first" });
   }
 
+  let decoded;
   try {
-    jwt.verify(token, CREDENTIALS.JWT_SECRET);
+    decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
   } catch {
     // invalid/expired token; cookie is cleared below regardless of outcome
   }
+
+  logAuthEvent("logout", {
+    employee_id: decoded?.employee_id ?? null,
+    user_id: decoded?.id ?? null,
+    ip: req.ip,
+    success: true,
+  });
 
   res.clearCookie("token", COOKIE_OPTIONS);
   return res

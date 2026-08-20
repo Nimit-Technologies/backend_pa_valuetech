@@ -14,6 +14,11 @@ export const createUser = async (req, res) => {
   try {
     const { confirm_password } = req.body;
 
+    if (!req.body.password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Password is required" });
+    }
     if (!confirm_password) {
       return res
         .status(400)

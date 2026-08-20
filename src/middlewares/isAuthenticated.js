@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 import { CREDENTIALS } from "../constant/credentials.js";
+import { COOKIE_OPTIONS } from "../constant/cookie-option.js";
+import prisma from "../prisma/client.js";
 
-export const isAuthenticated = (req, res, next) => {
+export const isAuthenticated = async (req, res, next) => {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -12,7 +14,27 @@ export const isAuthenticated = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET);
+    const decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+
+    // The JWT payload is only proof of *who* logged in and *when* — it can't
+    // reflect anything that happened to the account afterward. Re-check
+    // current DB state on every request so a deactivation/soft-delete takes
+    // effect immediately instead of waiting out the token's TTL.
+    const currentUser = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { is_active: true, deleted_at: true },
+    });
+
+    if (!currentUser || !currentUser.is_active || currentUser.deleted_at) {
+      res.clearCookie("token", COOKIE_OPTIONS);
+      return res.status(401).json({
+        success: false,
+        message: "Account is no longer active. Please contact your administrator.",
+      });
+    }
+
     req.user = decoded;
     next();
   } catch (error) {

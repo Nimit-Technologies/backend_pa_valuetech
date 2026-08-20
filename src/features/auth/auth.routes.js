@@ -1,13 +1,15 @@
 import { Router } from "express";
-import { login }   from "./controllers/auth.login.js";
-import { logout }  from "./controllers/auth.logout.js";
+import { login } from "./controllers/auth.login.js";
+import { logout } from "./controllers/auth.logout.js";
 import { session } from "./controllers/auth.session.js";
 import { isAlreadyLoggedIn } from "../../middlewares/isAlreadyLoggedIn.js";
-import { isAuthenticated }   from "../../middlewares/isAuthenticated.js";
+import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
+import { loginLimiter } from "../../middlewares/login-limiter.js";
+import { accountLoginLimiter } from "../../middlewares/account-login-limiter.js";
 
 const router = Router();
 
-router.post("/login", isAlreadyLoggedIn, login);
+router.post("/login", loginLimiter, accountLoginLimiter, isAlreadyLoggedIn, login);
 router.post("/logout", logout);
 router.get("/session", isAuthenticated, session);
 

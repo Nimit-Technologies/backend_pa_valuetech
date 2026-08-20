@@ -11,16 +11,12 @@ if (!CREDENTIALS.DATABASE_URL) {
 const pool = new Pool({ connectionString: CREDENTIALS.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({
-  // Default: never return the password hash from a `user` query. Individual
-  // queries that legitimately need it (e.g. login) opt back in with
-  // `omit: { password: false }` at the query level — see
-  // features/auth/services/service.auth.login.js.
-  omit: {
-    user: {
-      password: true,
-    },
-  },
   adapter,
+  // Fail-safe default: no query returns the password hash unless it
+  // explicitly opts back in (see service.auth.login.js, the one legitimate
+  // exception). Without this, protection against leaking the hash depends
+  // entirely on every call site remembering its own select/omit.
+  omit: { user: { password: true } },
 });
 
 try {

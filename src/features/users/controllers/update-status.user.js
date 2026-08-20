@@ -1,5 +1,6 @@
 import { getUserById } from "../services/service.getById.user.js";
 import { setUserStatus } from "../services/service.updateStatus.user.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const updateUserStatus = async (req, res) => {
   try {
@@ -21,6 +22,18 @@ export const updateUserStatus = async (req, res) => {
 
     const is_active = !existing.is_active;
     const user = await setUserStatus(id, is_active);
+
+    // isAuthenticated re-checks is_active on every request, so this takes
+    // effect on the target user's live session immediately — worth a log
+    // line independent of the generic update audit trail.
+    logAuthEvent(is_active ? "account_activated" : "account_deactivated", {
+      user_id: id,
+      employee_id: existing.employee_id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
     res.json({
       success: true,
       message: `User ${is_active ? "activated" : "deactivated"} successfully`,

@@ -4,7 +4,8 @@ model BusinessType {
   name      String  @unique
   is_active Boolean @default(true)
 
-  cases Case[]
+  cases       Case[]
+  allocations Allocation[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 import { CREDENTIALS } from "../constant/credentials.js";
+import { COOKIE_OPTIONS } from "../constant/cookie-option.js";
+
 
 export const isAlreadyLoggedIn = (req, res, next) => {
   const token = req.cookies?.token;
@@ -9,7 +11,9 @@ export const isAlreadyLoggedIn = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET);
+    const decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
     return res.status(200).json({
       success: true,
       message: "Already logged in",
@@ -25,11 +29,7 @@ export const isAlreadyLoggedIn = (req, res, next) => {
     });
   } catch {
     // missing/expired/invalid token — clear it and let the request through to login
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.clearCookie("token", COOKIE_OPTIONS);
     return next();
   }
 };

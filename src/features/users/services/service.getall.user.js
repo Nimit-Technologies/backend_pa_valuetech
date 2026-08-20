@@ -67,6 +67,7 @@ export const getAllUsers = async (query) => {
     userFirstId: finalUsers[0]?.id,
     userLastId: finalUsers[finalUsers.length - 1]?.id,
     hasNextPage: direction === PAGINATION_DIRECTION.NEXT ? hasMore : !!cursorId,
+    
     hasPreviousPage:
       direction === PAGINATION_DIRECTION.PREVIOUS ? hasMore : !!cursorId,
     userLength: finalUsers.length,
