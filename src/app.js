@@ -12,6 +12,14 @@ import { AppError } from "./utils/app-error.js";
 
 const app = express();
 
+// Coolify/Traefik terminates TLS and proxies every request through a
+// single hop — trust exactly that one hop's X-Forwarded-* headers so
+// req.ip / req.secure reflect the real client instead of the proxy.
+// Without this, express-rate-limit buckets all visitors under the proxy's
+// IP (or throws its X-Forwarded-For validation error) and secure-cookie /
+// redirect logic that checks req.secure misbehaves behind TLS termination.
+app.set("trust proxy", 1);
+
 // Don't advertise the framework in responses.
 app.disable("x-powered-by");
 
