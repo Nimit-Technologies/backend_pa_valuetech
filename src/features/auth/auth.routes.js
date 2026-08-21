@@ -9,7 +9,13 @@ import { accountLoginLimiter } from "../../middlewares/account-login-limiter.js"
 
 const router = Router();
 
-router.post("/login", loginLimiter, accountLoginLimiter, isAlreadyLoggedIn, login);
+router.post(
+  "/login",
+  loginLimiter,
+  accountLoginLimiter,
+  isAlreadyLoggedIn,
+  login,
+);
 router.post("/logout", logout);
 router.get("/session", isAuthenticated, session);
 

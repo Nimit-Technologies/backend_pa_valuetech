@@ -25,7 +25,6 @@ export const getAllUsers = async (req, res) => {
       dataLimit,
     });
   } catch (error) {
-    
     console.error("getAllUsers error:", error);
 
     const status = error.status || 500;

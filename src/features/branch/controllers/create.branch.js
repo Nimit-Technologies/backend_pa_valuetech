@@ -1,6 +1,7 @@
 import { findBranchByName } from "../services/service.findByName.branch.js";
 import { createBranch as createBranchService } from "../services/service.create.branch.js";
 import { branchSchema } from "../branch.schema.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const createBranch = async (req, res) => {
   try {
@@ -21,6 +22,14 @@ export const createBranch = async (req, res) => {
     }
 
     const branch = await createBranchService(name);
+
+    logAuthEvent("branch_created", {
+      branch_id: branch.id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
     res.status(201).json({ success: true, data: branch });
   } catch (error) {
     console.error("createBranch error:", error);

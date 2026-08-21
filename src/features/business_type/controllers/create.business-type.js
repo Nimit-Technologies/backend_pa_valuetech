@@ -4,7 +4,6 @@ import { businessTypeSchema } from "../business-type.schema.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 
-
 export const createBusinessType = async (req, res) => {
   try {
     const parsed = businessTypeSchema.safeParse(req.body);

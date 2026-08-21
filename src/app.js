@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import helmet from "helmet";
 import "dotenv/config";
 import routes from "./index.js";
 import "./prisma/client.js";
@@ -13,6 +14,12 @@ const app = express();
 
 // Don't advertise the framework in responses.
 app.disable("x-powered-by");
+
+// Security headers (HSTS, X-Content-Type-Options, X-Frame-Options /
+// frame-ancestors, a conservative default CSP, etc.) — this is a pure JSON
+// API with no server-rendered HTML, so the default policy set is safe here
+// without per-route tuning.
+app.use(helmet());
 
 app.use(globalLimiter);
 app.use(express.json({ limit: `${CREDENTIALS.BODY_LIMIT}mb` }));
@@ -30,7 +37,9 @@ app.use(
       // Route through globalErrorHandler as a proper 403 instead of an
       // untyped Error, which would otherwise fall through to a generic
       // "500 Something went very wrong" response.
-      return callback(new AppError(`Origin ${origin} not allowed by CORS`, 403));
+      return callback(
+        new AppError(`Origin ${origin} not allowed by CORS`, 403),
+      );
     },
     credentials: true,
   }),

@@ -3,6 +3,7 @@ import { createRole as createRoleService } from "../services/service.create.role
 import { getDepartmentById } from "../../departments/services/service.getById.department.js";
 import { roleSchema } from "../role.schema.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const createRole = async (req, res) => {
   try {
@@ -33,6 +34,12 @@ export const createRole = async (req, res) => {
     }
 
     const role = await createRoleService(name, department_id);
+    logAuthEvent("role_created", {
+      role_id: role.id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
     res.status(201).json({ success: true, data: role });
   } catch (error) {
     console.error("createRole error:", error);

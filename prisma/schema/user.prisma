@@ -9,6 +9,15 @@ model User {
   aadhaar_number String @unique
   is_active      Boolean @default(true)
 
+  // Bumped on logout and on any admin change that could alter what an
+  // already-issued token is allowed to do (role/branch/department/status/
+  // password). isAuthenticated compares this against the value embedded in
+  // the JWT at login time and rejects the token on a mismatch, even if its
+  // signature and exp are still valid — this is what lets logout and
+  // privilege changes actually revoke a token instead of just clearing the
+  // browser's cookie.
+  token_version Int @default(0)
+
   branch_id     String
   department_id String
   role_id       String

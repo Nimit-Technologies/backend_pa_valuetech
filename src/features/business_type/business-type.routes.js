@@ -36,12 +36,7 @@ router.delete(
   softDeleteBusinessType,
 );
 
-router.patch(
-  "/status/:id",
-  isAuthenticated,
-  isAdmin,
-  updateBusinessTypeStatus,
-);
+router.patch("/status/:id", isAuthenticated, isAdmin, updateBusinessTypeStatus);
 router.patch("/restore/:id", isAuthenticated, isAdmin, restoreBusinessType);
 
 router.delete("/delete/:id", isAuthenticated, isAdmin, deleteBusinessType);

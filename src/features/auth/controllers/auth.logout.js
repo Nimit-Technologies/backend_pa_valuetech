@@ -2,8 +2,9 @@ import jwt from "jsonwebtoken";
 import { CREDENTIALS } from "../../../constant/credentials.js";
 import { COOKIE_OPTIONS } from "../../../constant/cookie-option.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import { bumpTokenVersion } from "../../users/services/service.tokenVersion.user.js";
 
-export const logout = (req, res) => {
+export const logout = async (req, res) => {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -20,6 +21,19 @@ export const logout = (req, res) => {
     });
   } catch {
     // invalid/expired token; cookie is cleared below regardless of outcome
+  }
+
+  // Revoke server-side, not just client-side: bump token_version so this
+  // token — and any other copy of it that might exist outside this browser
+  // (XSS exfiltration, a proxy/access log, a synced browser session) — is
+  // rejected by isAuthenticated from now on, not merely removed from this
+  // browser's cookie jar.
+  if (decoded?.id) {
+    try {
+      await bumpTokenVersion(decoded.id);
+    } catch (error) {
+      console.error("[auth:logout] failed to revoke session:", error);
+    }
   }
 
   logAuthEvent("logout", {

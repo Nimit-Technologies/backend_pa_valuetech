@@ -2,10 +2,32 @@ import { getAllRoles as getAllRolesService } from "../services/service.getall.ro
 
 export const getAllRoles = async (req, res) => {
   try {
-    const roles = await getAllRolesService();
-    res.json({ success: true, data: roles });
+    const { direction, cursorId } = req.query;
+
+    const {
+      roles,
+      roleFirstId,
+      roleLastId,
+      hasNextPage,
+      hasPreviousPage,
+      roleLength,
+      dataLimit,
+    } = await getAllRolesService({ direction, cursorId });
+    res.json({
+      success: true,
+      data: roles,
+      roleFirstId,
+      roleLastId,
+      hasNextPage,
+      hasPreviousPage,
+      roleLength,
+      dataLimit,
+    });
   } catch (error) {
     console.error("getAllRoles error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch roles" });
+
+    const status = error.status || 500;
+    const message = error.status ? error.message : "Failed to fetch roles";
+    res.status(status).json({ success: false, message });
   }
 };

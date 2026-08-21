@@ -24,14 +24,27 @@ export const isAuthenticated = async (req, res, next) => {
     // effect immediately instead of waiting out the token's TTL.
     const currentUser = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { is_active: true, deleted_at: true },
+      select: { is_active: true, deleted_at: true, token_version: true },
     });
 
     if (!currentUser || !currentUser.is_active || currentUser.deleted_at) {
       res.clearCookie("token", COOKIE_OPTIONS);
       return res.status(401).json({
         success: false,
-        message: "Account is no longer active. Please contact your administrator.",
+        message:
+          "Account is no longer active. Please contact your administrator.",
+      });
+    }
+
+    // token_version is bumped on logout and on any admin change to this
+    // user (role/branch/department/status/password). A mismatch means this
+    // token predates that change — its signature and exp are still valid,
+    // but it must not be honored any more.
+    if (currentUser.token_version !== decoded.token_version) {
+      res.clearCookie("token", COOKIE_OPTIONS);
+      return res.status(401).json({
+        success: false,
+        message: "Session is no longer valid. Please log in again.",
       });
     }
 

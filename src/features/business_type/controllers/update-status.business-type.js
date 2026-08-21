@@ -15,7 +15,8 @@ export const updateBusinessTypeStatus = async (req, res) => {
     if (existing.deleted_at) {
       return res.status(409).json({
         success: false,
-        message: "Business type is soft-deleted; restore it before changing status",
+        message:
+          "Business type is soft-deleted; restore it before changing status",
       });
     }
 
@@ -24,12 +25,13 @@ export const updateBusinessTypeStatus = async (req, res) => {
     res.json({
       success: true,
       message: `Business type ${is_active ? "activated" : "deactivated"} successfully`,
-      data: businessType    ,
+      data: businessType,
     });
   } catch (error) {
     console.error("updateBusinessTypeStatus error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update business type status" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update business type status",
+    });
   }
 };

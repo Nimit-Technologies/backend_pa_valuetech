@@ -5,6 +5,8 @@ import { bankSchema } from "../bank.schema.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const createBank = async (req, res) => {
   try {
@@ -17,6 +19,14 @@ export const createBank = async (req, res) => {
 
     const { name, display_name, gst_number, branch_code, branch_id, address } =
       parsed.data;
+
+    const scope = resolveBranchScope(req);
+    if (scope && branch_id !== scope) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only create banks for your own branch",
+      });
+    }
 
     const branch = await getBranchById(branch_id);
     if (
@@ -41,6 +51,14 @@ export const createBank = async (req, res) => {
       branch_code,
       branch_id,
       address,
+    });
+
+    logAuthEvent("bank_created", {
+      bank_id: bank.id,
+      branch_id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
     });
 
     res.status(201).json({ success: true, data: bank });

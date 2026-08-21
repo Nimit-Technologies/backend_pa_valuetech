@@ -3,6 +3,7 @@ import { createDepartment as createDepartmentService } from "../services/service
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { departmentSchema } from "../department.schema.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const createDepartment = async (req, res) => {
   try {
@@ -33,6 +34,15 @@ export const createDepartment = async (req, res) => {
     }
 
     const department = await createDepartmentService(name, branch_id);
+
+    logAuthEvent("department_created", {
+      department_id: department.id,
+      branch_id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
     res.status(201).json({ success: true, data: department });
   } catch (error) {
     console.error("createDepartment error:", error);

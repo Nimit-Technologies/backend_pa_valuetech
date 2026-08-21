@@ -1,4 +1,4 @@
-const ROLE = {
+export const ROLE = {
   SUPER_ADMIN: "super-admin",
   BRANCH_ADMIN: "branch-admin",
   COORDINATOR: "coordinator",
@@ -30,6 +30,11 @@ const hasRole = (req, ...roles) =>
 
 const hasDepartment = (req, department) =>
   normalize(req.user?.department?.name) === department;
+
+// Pure predicate (no res/next) for controllers that need to branch their own
+// query/write scope on role — e.g. restricting a branch-admin to records in
+// their own branch — without duplicating the role-normalization logic above.
+export const isSuperAdminRole = (req) => hasRole(req, ROLE.SUPER_ADMIN);
 
 export const isSuperAdmin = (req, res, next) => {
   if (hasRole(req, ROLE.SUPER_ADMIN)) return next();

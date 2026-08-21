@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 import { CREDENTIALS } from "../constant/credentials.js";
 import { COOKIE_OPTIONS } from "../constant/cookie-option.js";
 
-
 export const isAlreadyLoggedIn = (req, res, next) => {
   const token = req.cookies?.token;
 
@@ -20,11 +19,11 @@ export const isAlreadyLoggedIn = (req, res, next) => {
       data: {
         id: decoded.id,
         employee_id: decoded.employee_id,
-        first_name:  decoded.first_name,
-        last_name:   decoded.last_name,
-        branch:      decoded.branch,
-        department:  decoded.department,
-        role:        decoded.role,
+        first_name: decoded.first_name,
+        last_name: decoded.last_name,
+        branch: decoded.branch,
+        department: decoded.department,
+        role: decoded.role,
       },
     });
   } catch {

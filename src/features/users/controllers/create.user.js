@@ -9,6 +9,7 @@ import { CREDENTIALS } from "../../../constant/credentials.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const createUser = async (req, res) => {
   try {
@@ -104,6 +105,16 @@ export const createUser = async (req, res) => {
     });
 
     const { password: _, ...userWithoutPassword } = user;
+
+    logAuthEvent("user_created", {
+      user_id: user.id,
+      employee_id: user.employee_id,
+      branch_id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
     return res.status(201).json({ success: true, data: userWithoutPassword });
   } catch (error) {
     if (error?.code === "P2002") {

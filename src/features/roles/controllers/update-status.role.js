@@ -1,9 +1,24 @@
 import { getRoleById } from "../services/service.getById.role.js";
 import { setRoleStatus } from "../services/service.updateStatus.role.js";
+import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
 
-export const updateRoleStatus = async (req, res) => {
+export const updateRoleStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const isValidId = isValidCuid(id);
+
+    if (!isValidId) {
+      if (!looksLikeAnId(id)) {
+        // Not even shaped like an id — most likely a mistyped/renamed
+        // route falling through to :id. Let Express keep matching so
+        // app.js's catch-all reports the real "Route not found".
+        return next();
+      }
+      return res
+        .status(404)
+        .json({ success: false, message: "Id is not valid" });
+    }
 
     const existing = await getRoleById(id);
     if (!existing) {
@@ -21,6 +36,14 @@ export const updateRoleStatus = async (req, res) => {
 
     const is_active = !existing.is_active;
     const role = await setRoleStatus(id, is_active);
+
+    logAuthEvent(is_active ? "role_activated" : "role_deactivated", {
+      role_id: id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
     res.json({
       success: true,
       message: `Role ${is_active ? "activated" : "deactivated"} successfully`,

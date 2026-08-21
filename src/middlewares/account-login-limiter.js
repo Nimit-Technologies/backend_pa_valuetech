@@ -17,6 +17,7 @@ export const accountLoginLimiter = rateLimit({
   },
   message: {
     success: false,
-    message: "Too many login attempts for this account. Please try again later.",
+    message:
+      "Too many login attempts for this account. Please try again later.",
   },
 });

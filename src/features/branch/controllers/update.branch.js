@@ -1,11 +1,25 @@
 import { getBranchById } from "../services/service.getById.branch.js";
 import { updateBranch as updateBranchService } from "../services/service.update.branch.js";
+import { findBranchByName } from "../services/service.findByName.branch.js";
 import { branchSchema } from "../branch.schema.js";
-
-export const updateBranch = async (req, res) => {
+import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
+export const updateBranch = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const isValidId = isValidCuid(id);
 
+    if (!isValidId) {
+      if (!looksLikeAnId(id)) {
+        // Not even shaped like an id — most likely a mistyped/renamed
+        // route falling through to :id. Let Express keep matching so
+        // app.js's catch-all reports the real "Route not found".
+        return next();
+      }
+      return res
+        .status(404)
+        .json({ success: false, message: "Id is not valid" });
+    }
     const parsed = branchSchema.safeParse(req.body);
     if (!parsed.success) {
       return res
@@ -33,7 +47,22 @@ export const updateBranch = async (req, res) => {
       return res.json({ success: true, message: "No changes are found" });
     }
 
+    const duplicate = await findBranchByName(name, id);
+    if (duplicate) {
+      return res
+        .status(409)
+        .json({ success: false, message: "Branch already exists" });
+    }
+
     const branch = await updateBranchService(id, name);
+
+    logAuthEvent("branch_updated", {
+      branch_id: id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
     res.json({ success: true, data: branch });
   } catch (error) {
     console.error("updateBranch error:", error);

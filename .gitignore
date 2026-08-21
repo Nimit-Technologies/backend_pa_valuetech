@@ -10,5 +10,6 @@ npm-debug.log*
 !.env.example
 
 /src/generated/prisma
+/prisma/migrations/*
 .agents/*
 

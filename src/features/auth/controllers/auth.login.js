@@ -3,7 +3,10 @@ import jwt from "jsonwebtoken";
 import { loginSchema } from "../auth.schema.js";
 import { findUserForLogin } from "../services/service.auth.login.js";
 import { CREDENTIALS } from "../../../constant/credentials.js";
-import { TOKEN_TTL_SECONDS, COOKIE_OPTIONS } from "../../../constant/cookie-option.js";
+import {
+  TOKEN_TTL_SECONDS,
+  COOKIE_OPTIONS,
+} from "../../../constant/cookie-option.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 
 // Pre-computed hash used to equalize response time when the user
@@ -27,8 +30,11 @@ const buildTokenPayload = (user) => ({
   phone: user.phone,
   branch: { id: user.branch.id, name: user.branch.name },
   department: user.department,
+  // Embedded so isAuthenticated can detect a token issued before a
+  // logout/role/branch/password change and reject it, instead of trusting
+  // this snapshot for the token's full TTL.
+  token_version: user.token_version,
 });
-
 
 const buildUserResponse = (user) => ({
   id: user.id,

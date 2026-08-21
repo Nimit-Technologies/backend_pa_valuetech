@@ -57,23 +57,24 @@ So, for example:
 
 ## 4. Main entities and what they mean
 
-| Entity | Simple meaning | Main relationship |
-|---|---|---|
-| Branch | A company office or location | Has departments, users, banks, and cases |
-| Department | A unit inside a branch | Belongs to a branch and has roles and users |
-| Role | A job position inside a department | Assigned to users and used in allocations |
-| User | An employee or staff member | Belongs to a branch, department, role, and address |
-| Address | A physical address | Linked to a user or bank |
-| Bank | A financial institution | Belongs to a branch and is linked to cases |
-| BusinessType | A category for a case | Used to classify cases |
-| Case | A work item or request | Belongs to a branch, bank, user, and address |
-| Remark | A note or comment | Added to a case or related entity |
-| Allocation | A task assignment for a case | Links a case, user, role, and status |
-| Status | Current stage of an allocation | Describes where the allocation is in the workflow |
+| Entity       | Simple meaning                     | Main relationship                                  |
+| ------------ | ---------------------------------- | -------------------------------------------------- |
+| Branch       | A company office or location       | Has departments, users, banks, and cases           |
+| Department   | A unit inside a branch             | Belongs to a branch and has roles and users        |
+| Role         | A job position inside a department | Assigned to users and used in allocations          |
+| User         | An employee or staff member        | Belongs to a branch, department, role, and address |
+| Address      | A physical address                 | Linked to a user or bank                           |
+| Bank         | A financial institution            | Belongs to a branch and is linked to cases         |
+| BusinessType | A category for a case              | Used to classify cases                             |
+| Case         | A work item or request             | Belongs to a branch, bank, user, and address       |
+| Remark       | A note or comment                  | Added to a case or related entity                  |
+| Allocation   | A task assignment for a case       | Links a case, user, role, and status               |
+| Status       | Current stage of an allocation     | Describes where the allocation is in the workflow  |
 
 ## 5. Relationship summary in plain English
 
 ### Branch → Department → Role → User
+
 This is the main organization structure.
 
 - A Branch can have many Departments.
@@ -82,12 +83,15 @@ This is the main organization structure.
 - A User belongs to one Branch, one Department, and one Role.
 
 ### User → Address
+
 A user has one address record.
 
 ### Bank and Case
+
 A Bank is linked to Cases, and each Case also belongs to a Branch.
 
 ### Case → Remark and Allocation
+
 A Case can have many remarks and many allocation records.
 
 ## 6. Why this design is useful
