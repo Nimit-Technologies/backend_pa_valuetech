@@ -12,6 +12,7 @@
     "dev": "nodemon ./server.js",
     "//postinstall": "Auto-runs after npm install — generates Prisma Client into src/generated/prisma from schema/",
     "postinstall": "prisma generate",
+    "prisma:studio": "npx prisma studio",
     "//migrate": "Run manually when schema changes — creates a SQL migration file and applies it to the DB",
     "migrate": "prisma migrate dev",
     "lint": "eslint .",
