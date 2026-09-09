@@ -6,8 +6,27 @@ model User {
   email          String? @unique
   phone          String  @unique
   password       String
-  aadhaar_number String  @unique
+
+  // Aadhaar is stored encrypted at rest, never as plain digits.
+  //  - aadhaar_number: AES-256-GCM ciphertext ("v1:iv:tag:data"), random IV
+  //    per row, so it can't be indexed or matched directly.
+  //  - aadhaar_hash: deterministic HMAC-SHA256 "blind index" of the digits,
+  //    which is what carries the uniqueness constraint and backs the
+  //    "does this Aadhaar already exist" check.
+  // See src/utils/encryption.js.
+  aadhaar_number String
+  aadhaar_hash   String @unique
+
   is_active      Boolean @default(true)
+
+  // Bumped on logout and on any admin change that could alter what an
+  // already-issued token is allowed to do (role/branch/department/status/
+  // password). isAuthenticated compares this against the value embedded in
+  // the JWT at login time and rejects the token on a mismatch, even if its
+  // signature and exp are still valid — this is what lets logout and
+  // privilege changes actually revoke a token instead of just clearing the
+  // browser's cookie.
+  token_version Int @default(0)
 
   branch_id     String
   department_id String
@@ -17,14 +36,29 @@ model User {
   branch     Branch     @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   department Department @relation(fields: [department_id], references: [id], onDelete: Restrict)
   role       Role       @relation(fields: [role_id], references: [id], onDelete: Restrict)
-  address    Address    @relation(fields: [address_id], references: [id])
+  address    Address    @relation(fields: [address_id], references: [id], onDelete: Restrict)
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  remarks       Remark[]
+  cases         Case[]   @relation("CaseUser")
+  created_cases Case[]   @relation("CaseCreatedBy")
+  deleted_cases Case[]   @relation("CaseDeletedBy")
+
+  allocations      Allocation[] @relation("AllocationUser")
+  allocations_made Allocation[] @relation("AllocationAllocatedBy")
+
+  password_reset_tokens PasswordResetToken[]
+
+  history               Json                @default("[]")
+  created_at            DateTime            @default(now())
+  updated_at            DateTime            @updatedAt
+  deleted_at            DateTime?
+  case_update_histories CaseUpdateHistory[]
 
   @@index([branch_id])
   @@index([department_id])
   @@index([role_id])
+  @@index([employee_id])
+  @@index([email])
+  @@index([phone])
   @@map("users")
 }

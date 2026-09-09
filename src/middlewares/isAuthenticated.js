@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 import { CREDENTIALS } from "../constant/credentials.js";
+import { COOKIE_OPTIONS } from "../constant/cookie-option.js";
+import prisma from "../prisma/client.js";
 
-export const isAuthenticated = (req, res, next) => {
+export const isAuthenticated = async (req, res, next) => {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -12,7 +14,32 @@ export const isAuthenticated = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET);
+    const decoded = jwt.verify(token, CREDENTIALS.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { is_active: true, deleted_at: true, token_version: true },
+    });
+
+    if (!currentUser || !currentUser.is_active || currentUser.deleted_at) {
+      res.clearCookie("token", COOKIE_OPTIONS);
+      return res.status(401).json({
+        success: false,
+        message:
+          "Account is no longer active. Please contact your administrator.",
+      });
+    }
+
+    if (currentUser.token_version !== decoded.token_version) {
+      res.clearCookie("token", COOKIE_OPTIONS);
+      return res.status(401).json({
+        success: false,
+        message: "Session is no longer valid. Please log in again.",
+      });
+    }
+
     req.user = decoded;
     next();
   } catch (error) {

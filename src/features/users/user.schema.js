@@ -3,6 +3,9 @@ import {
   addressSchema,
   partialAddressSchema,
 } from "../address/address.schema.js";
+// Password rules live with the dedicated password-management schemas so
+// create/update and the change/forgot/reset endpoints can never diverge.
+import { passwordPolicy } from "./password.schema.js";
 
 export const userSchema = z.object({
   employee_id: z
@@ -31,19 +34,7 @@ export const userSchema = z.object({
     .min(10, "Phone number is required")
     .max(10, "Phone number must be 10 digits")
     .regex(/^\d+$/, "Phone number must contain only digits"),
-  password: z
-    .string()
-    .trim()
-    .min(8, "Password must be at least 8 characters")
-    .max(15, "Password must be at most 15 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(
-      /[^A-Za-z0-9]/,
-      "Password must contain at least one special character",
-    )
-    .regex(/^\S+$/, "Password must not contain spaces"),
+  password: passwordPolicy,
   aadhaar_number: z
     .string()
     .length(12, "Aadhaar number must be 12 digits")
@@ -56,6 +47,22 @@ export const userSchema = z.object({
 
   address: addressSchema,
 });
+
+/**
+ * POST /api/v1/user/get-aadhaar  (authenticated admin — reveal a user's
+ * Aadhaar number in the clear). The caller identifies the user by their
+ * employee_id; the same value login uses, normalised the same way.
+ */
+export const aadhaarLookupSchema = z
+  .object({
+    employee_id: z
+      .string()
+      .min(1, "Employee ID is required")
+      .max(50)
+      .trim()
+      .toLowerCase(),
+  })
+  .strict();
 
 export const updateUserSchema = z
   .object({
@@ -88,20 +95,7 @@ export const updateUserSchema = z
       .length(10, "Phone number must be 10 digits")
       .regex(/^\d+$/, "Phone must contain only digits")
       .optional(),
-    password: z
-      .string()
-      .trim()
-      .min(8, "Password must be at least 8 characters")
-      .max(15, "Password must be at most 15 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number")
-      .regex(
-        /[^A-Za-z0-9]/,
-        "Password must contain at least one special character",
-      )
-      .regex(/^\S+$/, "Password must not contain spaces")
-      .optional(),
+    password: passwordPolicy.optional(),
     confirm_password: z.string().optional(),
     aadhaar_number: z
       .string()

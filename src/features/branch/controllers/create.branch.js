@@ -1,6 +1,11 @@
 import { findBranchByName } from "../services/service.findByName.branch.js";
 import { createBranch as createBranchService } from "../services/service.create.branch.js";
 import { branchSchema } from "../branch.schema.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createBranchHistoryEntry,
+  formatBranchResponse,
+} from "../utils/branch-history.js";
 
 export const createBranch = async (req, res) => {
   try {
@@ -20,8 +25,17 @@ export const createBranch = async (req, res) => {
         .json({ success: false, message: "Branch already exists" });
     }
 
-    const branch = await createBranchService(name);
-    res.status(201).json({ success: true, data: branch });
+    const historyEntry = createBranchHistoryEntry("CREATE", req.user);
+    const branch = await createBranchService(name, historyEntry);
+
+    logAuthEvent("branch_created", {
+      branch_id: branch.id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
+    res.status(201).json({ success: true, data: formatBranchResponse(branch) });
   } catch (error) {
     console.error("createBranch error:", error);
     res

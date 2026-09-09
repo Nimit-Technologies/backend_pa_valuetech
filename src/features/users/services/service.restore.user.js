@@ -2,10 +2,19 @@ import prisma from "../../../prisma/client.js";
 
 const relationSelect = { select: { id: true, name: true } };
 
-export const restoreUser = (id) => {
+export const restoreUser = (id, historyEntry, existingHistory = []) => {
+  const currentHistory = Array.isArray(existingHistory) ? existingHistory : [];
+  const updatedHistory = historyEntry
+    ? [...currentHistory, historyEntry]
+    : currentHistory;
+
   return prisma.user.update({
     where: { id },
-    data: { deleted_at: null, is_active: true },
+    data: {
+      deleted_at: null,
+      is_active: true,
+      history: updatedHistory,
+    },
     select: {
       id: true,
       employee_id: true,
@@ -15,6 +24,7 @@ export const restoreUser = (id) => {
       phone: true,
       aadhaar_number: true,
       is_active: true,
+      history: true,
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,

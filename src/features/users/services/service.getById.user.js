@@ -14,6 +14,7 @@ export const getUserById = (id) => {
       phone: true,
       aadhaar_number: true,
       is_active: true,
+      history: true,
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,

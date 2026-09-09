@@ -4,7 +4,10 @@ model Branch {
   is_active   Boolean      @default(true)
   users       User[]
   departments Department[]
+  roles       Role[]
   banks       Bank[]
+
+  history     Json         @default("[]")
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

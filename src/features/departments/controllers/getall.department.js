@@ -1,14 +1,34 @@
 import { getAllDepartments as getAllDepartmentsService } from "../services/service.getall.department.js";
+import { formatDepartmentResponse } from "../utils/department-history.js";
 
 export const getAllDepartments = async (req, res) => {
   try {
-    const departments = await getAllDepartmentsService();
-    console.log(departments);
-    res.json({ success: true, data: departments });
+    const { direction, cursorId } = req.query;
+    const {
+      departments,
+      departmentFirstId,
+      departmentLastId,
+      hasNextPage,
+      hasPreviousPage,
+      departmentLength,
+      dataLimit,
+    } = await getAllDepartmentsService({ direction, cursorId });
+    res.json({
+      success: true,
+      data: formatDepartmentResponse(departments),
+      departmentFirstId,
+      departmentLastId,
+      hasNextPage,
+      hasPreviousPage,
+      departmentLength,
+      dataLimit,
+    });
   } catch (error) {
     console.error("getAllDepartments error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch departments" });
+    const status = error.status || 500;
+    const message = error.status
+      ? error.message
+      : "Failed to fetch departments";
+    res.status(status).json({ success: false, message });
   }
 };

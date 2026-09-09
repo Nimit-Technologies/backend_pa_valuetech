@@ -1,4 +1,5 @@
 import { getUserById } from "../services/service.getById.user.js";
+import { getUserByEmployeeId } from "../services/service.getByEmployeeId.js";
 import { updateUser as updateUserService } from "../services/service.update.user.js";
 import { updateUserSchema } from "../user.schema.js";
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
@@ -7,12 +8,65 @@ import { getRoleById } from "../../roles/services/service.getById.role.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
+import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  encrypt,
+  blindIndex,
+  decryptStored,
+} from "../../../utils/encryption.js";
 import bcrypt from "bcrypt";
 import { CREDENTIALS } from "../../../constant/credentials.js";
+import {
+  createUserHistoryEntry,
+  formatUserResponse,
+} from "../utils/user-history.js";
 
-export const updateUser = async (req, res) => {
+// True if `data` (only the keys the caller actually sent, since
+// updateUserSchema fields are all optional) would change anything on
+// `existing`. getUserById selects branch/department/role as nested relation
+// objects rather than flat *_id scalars, so those three compare against
+// `.id`. A password is never compared to the stored hash — its mere
+// presence means the caller intends to change it. Keeps a no-op PUT from
+// hitting the DB or re-triggering downstream effects (updated_at bump,
+// token_version bump/session invalidation, audit log, etc.).
+const hasChanges = (existing, data) =>
+  Object.entries(data).some(([key, value]) => {
+    if (key === "password") return true;
+    if (key === "confirm_password") return false;
+    // `existing.aadhaar_number` is ciphertext — compare against the
+    // decrypted value so an unchanged Aadhaar doesn't look like a change.
+    if (key === "aadhaar_number") {
+      return decryptStored(existing.aadhaar_number) !== value;
+    }
+    if (key === "address") {
+      if (!value || typeof value !== "object") return false;
+      return Object.entries(value).some(
+        ([addrKey, addrValue]) => existing.address?.[addrKey] !== addrValue,
+      );
+    }
+    if (key === "branch_id") return existing.branch?.id !== value;
+    if (key === "department_id") return existing.department?.id !== value;
+    if (key === "role_id") return existing.role?.id !== value;
+    return existing[key] !== value;
+  });
+
+export const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const isValidId = isValidCuid(id);
+
+    if (!isValidId) {
+      if (!looksLikeAnId(id)) {
+        // Not even shaped like an id — most likely a mistyped/renamed
+        // route falling through to :id. Let Express keep matching so
+        // app.js's catch-all reports the real "Route not found".
+        return next();
+      }
+      return res
+        .status(404)
+        .json({ success: false, message: "Id is not valid" });
+    }
 
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -35,7 +89,12 @@ export const updateUser = async (req, res) => {
       });
     }
 
+    if (!hasChanges(existing, parsed.data)) {
+      return res.json({ success: true, message: "No changes are found" });
+    }
+
     const {
+      employee_id,
       branch_id,
       department_id,
       role_id,
@@ -44,6 +103,19 @@ export const updateUser = async (req, res) => {
       ...updateData
     } = parsed.data;
 
+    // Only hit the DB for a duplicate if employee_id is actually changing —
+    // excludes this user's own row.
+    if (employee_id !== undefined && employee_id !== existing.employee_id) {
+      const duplicate = await getUserByEmployeeId(employee_id, id);
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message: "User with this employee ID already exists",
+        });
+      }
+      updateData.employee_id = employee_id;
+    }
+
     if (password) {
       if (password !== confirm_password) {
         return res
@@ -51,9 +123,18 @@ export const updateUser = async (req, res) => {
           .json({ success: false, message: "Passwords do not match" });
       }
       updateData.password = await bcrypt.hash(
-        password,
+        password + CREDENTIALS.PEPPER_SECRET,
         CREDENTIALS.SALT_ROUNDS,
       );
+    }
+
+    // Store Aadhaar encrypted, with the blind index carrying uniqueness —
+    // same treatment as create.user.js. Compute the hash from the plaintext
+    // before it's replaced with ciphertext. A collision with another user's
+    // Aadhaar surfaces as P2002 on aadhaar_hash in the catch block below.
+    if (updateData.aadhaar_number !== undefined) {
+      updateData.aadhaar_hash = blindIndex(updateData.aadhaar_number);
+      updateData.aadhaar_number = encrypt(updateData.aadhaar_number);
     }
 
     const [branch, department, role] = await Promise.all([
@@ -87,13 +168,27 @@ export const updateUser = async (req, res) => {
     )
       return;
 
-    const user = await updateUserService(id, {
-      ...updateData,
-      branch_id,
-      department_id,
-      role_id,
+    const historyEntry = createUserHistoryEntry("UPDATE", req.user);
+    const user = await updateUserService(
+      id,
+      {
+        ...updateData,
+        branch_id,
+        department_id,
+        role_id,
+      },
+      historyEntry,
+      existing.history,
+    );
+
+    logAuthEvent("user_updated", {
+      user_id: id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
     });
-    res.json({ success: true, data: user });
+
+    res.json({ success: true, data: formatUserResponse(user) });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);

@@ -2,13 +2,18 @@ import prisma from "../../../prisma/client.js";
 
 const relationSelect = { select: { id: true, name: true } };
 
-export const updateUser = (id, data) => {
+export const updateUser = (id, data, historyEntry, existingHistory = []) => {
   const { branch_id, department_id, role_id, address, ...rest } = data;
+  const currentHistory = Array.isArray(existingHistory) ? existingHistory : [];
+  const updatedHistory = historyEntry
+    ? [...currentHistory, historyEntry]
+    : currentHistory;
 
   return prisma.user.update({
     where: { id },
     data: {
       ...rest,
+      history: updatedHistory,
       ...(branch_id && { branch: { connect: { id: branch_id } } }),
       ...(department_id && { department: { connect: { id: department_id } } }),
       ...(role_id && { role: { connect: { id: role_id } } }),
@@ -23,6 +28,7 @@ export const updateUser = (id, data) => {
       phone: true,
       aadhaar_number: true,
       is_active: true,
+      history: true,
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,

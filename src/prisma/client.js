@@ -2,24 +2,17 @@ import "dotenv/config";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/index.js";
+import { CREDENTIALS } from "../constant/credentials.js";
 
-if (!process.env.DATABASE_URL) {
+if (!CREDENTIALS.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set. Check your .env file.");
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: CREDENTIALS.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({
-  // Default: never return the password hash from a `user` query. Individual
-  // queries that legitimately need it (e.g. login) opt back in with
-  // `omit: { password: false }` at the query level — see
-  // features/auth/services/service.auth.login.js.
-  omit: {
-    user: {
-      password: true,
-    },
-  },
   adapter,
+  omit: { user: { password: true, aadhaar_hash: true } },
 });
 
 try {
