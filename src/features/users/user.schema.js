@@ -3,8 +3,7 @@ import {
   addressSchema,
   partialAddressSchema,
 } from "../address/address.schema.js";
-// Password rules live with the dedicated password-management schemas so
-// create/update and the change/forgot/reset endpoints can never diverge.
+
 import { passwordPolicy } from "./password.schema.js";
 
 export const userSchema = z.object({

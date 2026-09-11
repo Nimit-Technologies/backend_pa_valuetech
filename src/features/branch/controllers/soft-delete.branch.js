@@ -11,9 +11,6 @@ export const softDeleteBranch = async (req, res, next) => {
 
     if (!isValidId) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res
@@ -28,7 +25,7 @@ export const softDeleteBranch = async (req, res, next) => {
     }
 
     const historyEntry = createBranchHistoryEntry("SOFT_DELETE", req.user);
-    await softDeleteBranchService(id, historyEntry, existing.history);
+    await softDeleteBranchService(id, historyEntry, existing);
 
     logAuthEvent("branch_soft_deleted", {
       branch_id: id,

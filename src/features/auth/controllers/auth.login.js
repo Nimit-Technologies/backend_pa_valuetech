@@ -16,15 +16,15 @@ const fail = (res, status, message, extra = {}) =>
   res.status(status).json({ success: false, message, ...extra });
 
 const buildTokenPayload = (user) => ({
-  id: user.id,
-  employee_id: user.employee_id,
-  first_name: user.first_name,
-  last_name: user.last_name,
-  role: user.role,
-  phone: user.phone,
-  branch: { id: user.branch.id, name: user.branch.name },
-  department: user.department,
-  token_version: user.token_version,
+  id: user?.id,
+  employee_id: user?.employee_id,
+  first_name: user?.first_name,
+  last_name: user?.last_name,
+  role: user?.role,
+  phone: user?.phone,
+  branch: { id: user?.branch.id, name: user?.branch.name },
+  department: user?.department,
+  token_version: user?.token_version,
 });
 
 export const login = async (req, res) => {
@@ -58,7 +58,7 @@ export const login = async (req, res) => {
     if (!user.is_active || user.deleted_at) {
       logAuthEvent("login_failed", {
         employee_id,
-        user_id: user.id,
+        user_id: user?.id,
         ip: req.ip,
         success: false,
         reason: "account_inactive",
@@ -70,7 +70,7 @@ export const login = async (req, res) => {
       );
     }
 
-    const token = jwt.sign(buildTokenPayload(user), CREDENTIALS.JWT_SECRET, {
+    const token = jwt.sign(buildTokenPayload(user), CREDENTIALS?.JWT_SECRET, {
       expiresIn: TOKEN_TTL_SECONDS,
       algorithm: "HS256",
     });
@@ -78,7 +78,7 @@ export const login = async (req, res) => {
     res.cookie("token", token, COOKIE_OPTIONS);
 
     logAuthEvent("login", {
-      employee_id: user.employee_id,
+      employee_id: user?.employee_id,
       user_id: user.id,
       ip: req.ip,
       success: true,

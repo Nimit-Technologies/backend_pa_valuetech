@@ -2,14 +2,6 @@ import { getOriginalAadhaarService } from "../services/service.getAadhaar.user.j
 import { aadhaarLookupSchema } from "../user.schema.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 
-/**
- * POST /api/v1/user/get-aadhaar  (authenticated admin)
- *
- * Body: { employee_id: "emp12373" }
- * Returns that user's Aadhaar number decrypted in full — this is the only
- * endpoint that does so; every other response keeps it masked/encrypted.
- * Each successful reveal is written to the audit log.
- */
 export const getOriginalAadhaar = async (req, res) => {
   try {
     const parsed = aadhaarLookupSchema.safeParse(req.body);
@@ -45,7 +37,7 @@ export const getOriginalAadhaar = async (req, res) => {
       message: "Original Aadhaar number retrieved successfully",
       data: {
         aadhaar_number: result.original_aadhaar_number,
-        user: result.user,
+        employee_id: result.user.employee_id,
       },
     });
   } catch (error) {

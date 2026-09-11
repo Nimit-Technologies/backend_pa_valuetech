@@ -6,5 +6,5 @@ export const loginSchema = z.object({
     .min(1, "Employee ID is required")
     .trim()
     .toLowerCase(),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(12, "invalid password").max(20, "invalid password"),
 });

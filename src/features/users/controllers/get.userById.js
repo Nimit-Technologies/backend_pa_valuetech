@@ -9,9 +9,6 @@ export const getUserById = async (req, res, next) => {
 
     if (!isValidId) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res

@@ -1,10 +1,23 @@
 import { getBranchById } from "../services/service.getById.branch.js";
 import { deleteBranch as deleteBranchService } from "../services/service.delete.branch.js";
 import { getBranchDependents } from "../services/service.checkDependents.branch.js";
+import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 
-export const deleteBranch = async (req, res) => {
+export const deleteBranch = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    if (!isValidCuid(id)) {
+      if (!looksLikeAnId(id)) {
+        // Not even shaped like an id — most likely a mistyped/renamed
+        // route falling through to :id. Let Express keep matching so
+        // app.js's catch-all reports the real "Route not found".
+        return next();
+      }
+      return res
+        .status(404)
+        .json({ success: false, message: "Id is not valid" });
+    }
 
     const existing = await getBranchById(id);
     if (!existing) {

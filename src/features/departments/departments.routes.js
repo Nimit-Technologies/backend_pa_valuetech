@@ -14,7 +14,7 @@ const router = Router();
 
 router.get("/all-department", isAuthenticated, isAdmin, getAllDepartments);
 router.get("/:id", isAuthenticated, isAdmin, getDepartmentById);
-router.post("/create-department",isAuthenticated, isAdmin, createDepartment);
+router.post("/create-department", isAuthenticated, isAdmin, createDepartment);
 router.put("/update/:id", isAuthenticated, isAdmin, updateDepartment);
 router.delete(
   "/soft-delete/:id",

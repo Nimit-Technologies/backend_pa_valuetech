@@ -16,12 +16,6 @@ export const isAlreadyLoggedIn = async (req, res, next) => {
       algorithms: ["HS256"],
     });
 
-    // A signature-valid, unexpired token is NOT enough to declare the caller
-    // "already logged in": it may have been revoked (logout / a privilege
-    // change bumps token_version) or the account may have been deactivated
-    // since it was issued. Mirror isAuthenticated's DB checks so this
-    // endpoint can't hand back an identity that every other route would
-    // immediately 401 — fall through to the login flow instead.
     const currentUser = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { is_active: true, deleted_at: true, token_version: true },

@@ -17,24 +17,14 @@ import { passwordResetLimiter } from "../../middlewares/password-reset-limiter.j
 
 const router = Router();
 
-// --- Password management ---
-// Kept separate from the admin PUT /update/:id path: self-service change
-// always requires the current password; forgot/reset are public and
-// token-based. Declared before "/:id" so the literal paths win.
-// NOTE: /forgot-password and /reset-password need the password_reset_tokens
-// table — run `npm run migrate` after pulling this change.
 router.patch("/change-password", isAuthenticated, changePassword);
 router.post("/forgot-password", passwordResetLimiter, forgotPassword);
 router.post("/reset-password", passwordResetLimiter, resetPassword);
 
-// --- Aadhaar reveal ---
-// The only endpoint that returns an Aadhaar number decrypted in full.
-// Admin-only, and every successful reveal is written to the audit log.
-// Body: { employee_id: "emp12373" }.
 router.post("/aadhaar", isAuthenticated, getOriginalAadhaar);
 
 router.get("/all-user", getAllUsers);
-router.get("/:id", isAuthenticated, isAdmin, getUserById);
+router.get("/:id", isAuthenticated, getUserById);
 router.post("/create-user", isAuthenticated, isAdmin, createUser);
 router.put("/update/:id", isAuthenticated, isAdmin, updateUser);
 router.delete("/soft-delete/:id", isAuthenticated, isAdmin, softDeleteUser);

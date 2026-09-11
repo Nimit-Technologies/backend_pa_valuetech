@@ -1,31 +1,17 @@
 model User {
-  id             String  @id @default(cuid())
-  employee_id    String  @unique
-  first_name     String
-  last_name      String
-  email          String? @unique
-  phone          String  @unique
-  password       String
+  id          String  @id @default(cuid())
+  employee_id String  @unique
+  first_name  String
+  last_name   String
+  email       String? @unique
+  phone       String  @unique
+  password    String
 
-  // Aadhaar is stored encrypted at rest, never as plain digits.
-  //  - aadhaar_number: AES-256-GCM ciphertext ("v1:iv:tag:data"), random IV
-  //    per row, so it can't be indexed or matched directly.
-  //  - aadhaar_hash: deterministic HMAC-SHA256 "blind index" of the digits,
-  //    which is what carries the uniqueness constraint and backs the
-  //    "does this Aadhaar already exist" check.
-  // See src/utils/encryption.js.
   aadhaar_number String
   aadhaar_hash   String @unique
 
-  is_active      Boolean @default(true)
+  is_active Boolean @default(true)
 
-  // Bumped on logout and on any admin change that could alter what an
-  // already-issued token is allowed to do (role/branch/department/status/
-  // password). isAuthenticated compares this against the value embedded in
-  // the JWT at login time and rejects the token on a mismatch, even if its
-  // signature and exp are still valid — this is what lets logout and
-  // privilege changes actually revoke a token instead of just clearing the
-  // browser's cookie.
   token_version Int @default(0)
 
   branch_id     String

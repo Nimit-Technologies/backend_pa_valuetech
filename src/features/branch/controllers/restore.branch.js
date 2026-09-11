@@ -14,9 +14,6 @@ export const restoreBranch = async (req, res, next) => {
 
     if (!isValidId) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res
@@ -37,11 +34,7 @@ export const restoreBranch = async (req, res, next) => {
     }
 
     const historyEntry = createBranchHistoryEntry("RESTORE", req.user);
-    const branch = await restoreBranchService(
-      id,
-      historyEntry,
-      existing.history,
-    );
+    const branch = await restoreBranchService(id, historyEntry, existing);
 
     logAuthEvent("branch_restored", {
       branch_id: id,

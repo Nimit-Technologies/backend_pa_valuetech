@@ -1,11 +1,3 @@
-/**
- * Creates a standardized branch audit history record.
- *
- * @param {string} action - The route/operation action (e.g. "CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "STATUS_CHANGE")
- * @param {Object} [user] - The req.user object attached by isAuthenticated middleware
- * @returns {Object} History entry object containing date_time, user_full_name, department_name, role_name, branch_name, and employee_id
- */
-
 const pad = (n) => String(n).padStart(2, "0");
 
 export const formatDateTime = (date = new Date()) => {
@@ -17,14 +9,6 @@ export const formatDateTime = (date = new Date()) => {
   return `${d} ${t}`;
 };
 
-/**
- * Formats branch data for API responses.
- * When NODE_ENV === 'development', includes history, created_at, updated_at, and deleted_at (formatted).
- * Otherwise, omits these fields.
- *
- * @param {Object|Array} data - Single branch object or array of branch objects
- * @returns {Object|Array} Formatted branch data
- */
 export const formatBranchResponse = (data) => {
   if (!data) return data;
 
@@ -35,9 +19,11 @@ export const formatBranchResponse = (data) => {
 
     const { history, created_at, updated_at, deleted_at, ...rest } = branch;
 
+    const base = { ...rest, is_deleted: Boolean(deleted_at) };
+
     if (isDev) {
       return {
-        ...rest,
+        ...base,
         history: history ?? [],
         created_at: formatDateTime(created_at),
         updated_at: formatDateTime(updated_at),
@@ -45,7 +31,7 @@ export const formatBranchResponse = (data) => {
       };
     }
 
-    return rest;
+    return base;
   };
 
   if (Array.isArray(data)) {

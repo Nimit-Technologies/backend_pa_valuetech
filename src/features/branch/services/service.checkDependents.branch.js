@@ -17,7 +17,9 @@ export const getBranchDependents = async (branchId) => {
       select: { id: true, name: true },
     }),
     prisma.role.findMany({
-      where: { department: { branch_id: branchId } },
+      // Role has its own branch_id FK (onDelete: Restrict), so match on that
+      // directly rather than only via the role's department.
+      where: { branch_id: branchId },
       select: { id: true, name: true },
     }),
   ]);

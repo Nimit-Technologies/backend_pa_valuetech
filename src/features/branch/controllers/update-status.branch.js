@@ -14,9 +14,6 @@ export const updateBranchStatus = async (req, res, next) => {
 
     if (!isValidId) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res
@@ -42,12 +39,7 @@ export const updateBranchStatus = async (req, res, next) => {
       is_active ? "ACTIVATE" : "DEACTIVATE",
       req.user,
     );
-    const branch = await setBranchStatus(
-      id,
-      is_active,
-      historyEntry,
-      existing.history,
-    );
+    const branch = await setBranchStatus(id, is_active, historyEntry, existing);
 
     logAuthEvent(is_active ? "branch_activated" : "branch_deactivated", {
       branch_id: id,
