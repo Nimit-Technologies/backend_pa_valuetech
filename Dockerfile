@@ -25,6 +25,13 @@ FROM node:${NODE_VERSION} AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
+# Coolify's own healthcheck runs `curl`/`wget` via `docker exec`, independent
+# of the HEALTHCHECK instruction below — needs to be present even though the
+# app itself never calls out to it.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY server.js ./
