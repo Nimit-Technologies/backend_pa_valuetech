@@ -123,9 +123,11 @@ export const createUser = async (req, res) => {
       success: true,
     });
 
-    return res
-      .status(201)
-      .json({ success: true, data: formatUserResponse(user) });
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: formatUserResponse(user),
+    });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);

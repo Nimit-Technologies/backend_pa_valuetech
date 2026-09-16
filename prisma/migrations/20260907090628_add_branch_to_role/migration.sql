@@ -5,7 +5,7 @@
 
 */
 -- DropIndex
-DROP INDEX "roles_name_department_id_idx";
+DROP INDEX "roles_name_department_id_key";
 
 -- AlterTable
 ALTER TABLE "roles" ADD COLUMN     "branch_id" TEXT NOT NULL,

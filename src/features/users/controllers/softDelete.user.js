@@ -37,11 +37,7 @@ export const softDeleteUser = async (req, res, next) => {
     }
 
     const historyEntry = createUserHistoryEntry("SOFT_DELETE", req.user);
-    const user = await softDeleteUserService(
-      id,
-      historyEntry,
-      existing.history,
-    );
+    const user = await softDeleteUserService(id, historyEntry, existing);
 
     logAuthEvent("user_soft_deleted", {
       user_id: id,

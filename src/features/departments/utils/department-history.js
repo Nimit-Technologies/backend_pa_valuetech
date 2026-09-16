@@ -87,9 +87,11 @@ export const formatDepartmentResponse = (data) => {
 
     const { history, created_at, updated_at, deleted_at, ...rest } = dept;
 
+    const base = { ...rest, is_deleted: Boolean(deleted_at) };
+
     if (isDev) {
       return {
-        ...rest,
+        ...base,
         history: history ?? [],
         created_at: formatDateTime(created_at),
         updated_at: formatDateTime(updated_at),
@@ -97,7 +99,7 @@ export const formatDepartmentResponse = (data) => {
       };
     }
 
-    return rest;
+    return base;
   };
 
   if (Array.isArray(data)) {

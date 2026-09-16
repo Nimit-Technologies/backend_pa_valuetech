@@ -1,0 +1,22 @@
+model CaseUpdateHistory {
+  id String @id @default(cuid())
+
+  case_id       String
+  updated_by_id String
+
+  case       Case @relation(fields: [case_id], references: [id], onDelete: Restrict)
+  updated_by User @relation(fields: [updated_by_id], references: [id], onDelete: Restrict)
+
+  // Snapshot of the updater's identity at the moment of this update.
+  // Immutable audit trail: must not change if the user/role/department is later edited.
+  first_name  String
+  employee_id String
+  role        String
+  department  String
+
+  updated_at DateTime @default(now())
+
+  @@index([case_id])
+  @@index([updated_by_id])
+  @@map("case_update_histories")
+}

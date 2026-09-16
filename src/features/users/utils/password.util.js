@@ -5,12 +5,6 @@ import { CREDENTIALS } from "../../../constant/credentials.js";
 const PEPPER = CREDENTIALS.PEPPER_SECRET ?? "";
 const SALT_ROUNDS = CREDENTIALS.SALT_ROUNDS;
 
-// Pre-computed hash of a value no real password can equal. verifyPassword()
-// runs bcrypt.compare() against this when there is no stored hash to check
-// (missing user, or an account provisioned without a local password) so the
-// call still takes ~the same time — response latency can't be used to
-// enumerate which accounts exist (CWE-208). Cost 10 is deliberate: it only
-// has to burn a comparable amount of time, not protect a real secret.
 export const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
   `password-timing-equalizer:${PEPPER}`,
   10,

@@ -22,14 +22,6 @@ import {
   formatUserResponse,
 } from "../utils/user-history.js";
 
-// True if `data` (only the keys the caller actually sent, since
-// updateUserSchema fields are all optional) would change anything on
-// `existing`. getUserById selects branch/department/role as nested relation
-// objects rather than flat *_id scalars, so those three compare against
-// `.id`. A password is never compared to the stored hash — its mere
-// presence means the caller intends to change it. Keeps a no-op PUT from
-// hitting the DB or re-triggering downstream effects (updated_at bump,
-// token_version bump/session invalidation, audit log, etc.).
 const hasChanges = (existing, data) =>
   Object.entries(data).some(([key, value]) => {
     if (key === "password") return true;
@@ -178,7 +170,7 @@ export const updateUser = async (req, res, next) => {
         role_id,
       },
       historyEntry,
-      existing.history,
+      existing,
     );
 
     logAuthEvent("user_updated", {
@@ -188,7 +180,11 @@ export const updateUser = async (req, res, next) => {
       success: true,
     });
 
-    res.json({ success: true, data: formatUserResponse(user) });
+    res.json({
+      success: true,
+      message: "User updated successfully",
+      data: formatUserResponse(user),
+    });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);

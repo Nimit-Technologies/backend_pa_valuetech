@@ -47,11 +47,6 @@ export const userSchema = z.object({
   address: addressSchema,
 });
 
-/**
- * POST /api/v1/user/get-aadhaar  (authenticated admin — reveal a user's
- * Aadhaar number in the clear). The caller identifies the user by their
- * employee_id; the same value login uses, normalised the same way.
- */
 export const aadhaarLookupSchema = z
   .object({
     employee_id: z

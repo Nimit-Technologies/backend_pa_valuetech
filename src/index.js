@@ -6,6 +6,7 @@ import departmentRoutes from "./features/departments/departments.routes.js";
 import roleRoutes from "./features/roles/roles.routes.js";
 import userRoutes from "./features/users/user.routes.js";
 import bankRoutes from "./features/banks/banks.routes.js";
+import dashboardRoutes from "./features/dashboard/dashboard.routes.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/department", departmentRoutes);
 router.use("/role", roleRoutes);
 router.use("/user", userRoutes);
 router.use("/bank", bankRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;

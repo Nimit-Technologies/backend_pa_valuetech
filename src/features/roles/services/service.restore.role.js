@@ -4,9 +4,12 @@ import {
   branchSelect,
   shapeRole,
 } from "./role.service.helpers.js";
+import { recordRoleTransition } from "../utils/role-count.js";
 
-export const restoreRole = async (id, historyEntry, existingHistory = []) => {
-  const currentHistory = Array.isArray(existingHistory) ? existingHistory : [];
+export const restoreRole = async (id, historyEntry, existing) => {
+  const currentHistory = Array.isArray(existing?.history)
+    ? existing.history
+    : [];
   const updatedHistory = historyEntry
     ? [...currentHistory, historyEntry]
     : currentHistory;
@@ -24,5 +27,7 @@ export const restoreRole = async (id, historyEntry, existingHistory = []) => {
     },
   });
 
+  // The row re-enters the counted set as active: total +1, active +1.
+  recordRoleTransition(existing, role);
   return shapeRole(role);
 };

@@ -52,7 +52,7 @@ export const restoreDepartment = async (req, res, next) => {
     const department = await restoreDepartmentService(
       id,
       historyEntry,
-      existing.history,
+      existing,
     );
 
     logAuthEvent("department_restored", {

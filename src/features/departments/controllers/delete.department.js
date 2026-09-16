@@ -1,10 +1,23 @@
 import { getDepartmentById } from "../services/service.getById.department.js";
 import { deleteDepartment as deleteDepartmentService } from "../services/service.delete.department.js";
 import { getDepartmentDependents } from "../services/service.checkDependents.department.js";
+import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 
-export const deleteDepartment = async (req, res) => {
+export const deleteDepartment = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    if (!isValidCuid(id)) {
+      if (!looksLikeAnId(id)) {
+        // Not even shaped like an id — most likely a mistyped/renamed
+        // route falling through to :id. Let Express keep matching so
+        // app.js's catch-all reports the real "Route not found".
+        return next();
+      }
+      return res
+        .status(404)
+        .json({ success: false, message: "Id is not valid" });
+    }
 
     const existing = await getDepartmentById(id);
     if (!existing) {

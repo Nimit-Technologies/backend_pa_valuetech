@@ -3,7 +3,7 @@ import { formatRoleResponse } from "../utils/role-history.js";
 
 export const getAllRoles = async (req, res) => {
   try {
-    const { direction, cursorId } = req.query;
+    const { direction, cursorId, search } = req.query;
 
     const {
       roles,
@@ -13,7 +13,9 @@ export const getAllRoles = async (req, res) => {
       hasPreviousPage,
       roleLength,
       dataLimit,
-    } = await getAllRolesService({ direction, cursorId });
+      totalCount,
+      totalActiveCount,
+    } = await getAllRolesService({ direction, cursorId, search });
     res.json({
       success: true,
       data: formatRoleResponse(roles),
@@ -23,6 +25,8 @@ export const getAllRoles = async (req, res) => {
       hasPreviousPage,
       roleLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     });
   } catch (error) {
     console.error("getAllRoles error:", error);

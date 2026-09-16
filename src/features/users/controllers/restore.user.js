@@ -42,9 +42,9 @@ export const restoreUser = async (req, res, next) => {
     }
 
     const [branch, department, role] = await Promise.all([
-      getBranchById(existing.branch_id),
-      getDepartmentById(existing.department_id),
-      getRoleById(existing.role_id),
+      getBranchById(existing.branch?.id),
+      getDepartmentById(existing.department?.id),
+      getRoleById(existing.role?.id),
     ]);
 
     if (
@@ -70,7 +70,7 @@ export const restoreUser = async (req, res, next) => {
       return;
 
     const historyEntry = createUserHistoryEntry("RESTORE", req.user);
-    const user = await restoreUserService(id, historyEntry, existing.history);
+    const user = await restoreUserService(id, historyEntry, existing);
 
     logAuthEvent("user_restored", {
       user_id: id,

@@ -1,6 +1,8 @@
 model Role {
   id        String  @id @default(cuid())
-  name      String  @unique
+  // Unique per department, not globally: "pranjal" may exist in both
+  // "honey" and "baby". See @@unique below.
+  name      String
   is_active Boolean @default(true)
 
   branch_id     String
@@ -17,7 +19,10 @@ model Role {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  @@index([name, department_id, branch_id])
+  // Names are lowercased by the zod schema before they are written, so this
+  // behaves case-insensitively. It also serves the (name, department_id)
+  // lookups the old three-column index covered.
+  @@unique([name, department_id])
   @@index([department_id])
   @@index([branch_id])
   @@map("roles")

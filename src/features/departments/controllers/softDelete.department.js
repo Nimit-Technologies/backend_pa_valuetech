@@ -40,7 +40,7 @@ export const softDeleteDepartment = async (req, res, next) => {
     const department = await softDeleteDepartmentService(
       id,
       historyEntry,
-      existing.history,
+      existing,
     );
 
     logAuthEvent("department_soft_deleted", {

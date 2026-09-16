@@ -19,6 +19,6 @@ router.post(
   login,
 );
 router.post("/logout", logoutLimiter, isLoggedIn, logout);
-router.get("/session", loginLimiter, isAuthenticated, session);
+router.get("/session", logoutLimiter, isAuthenticated, session);
 
 export default router;

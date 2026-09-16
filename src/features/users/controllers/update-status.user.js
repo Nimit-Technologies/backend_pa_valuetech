@@ -43,12 +43,7 @@ export const updateUserStatus = async (req, res, next) => {
       is_active ? "ACTIVATE" : "DEACTIVATE",
       req.user,
     );
-    const user = await setUserStatus(
-      id,
-      is_active,
-      historyEntry,
-      existing.history,
-    );
+    const user = await setUserStatus(id, is_active, historyEntry, existing);
 
     // isAuthenticated re-checks is_active on every request, so this takes
     // effect on the target user's live session immediately — worth a log

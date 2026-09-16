@@ -52,10 +52,17 @@ export const createDepartment = async (req, res) => {
       success: true,
     });
 
-    res
-      .status(201)
-      .json({ success: true, data: formatDepartmentResponse(department) });
+    res.status(201).json({
+      success: true,
+      message: "Department created successfully",
+      data: formatDepartmentResponse(department),
+    });
   } catch (error) {
+    if (error?.code === "P2002") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Department already exists" });
+    }
     console.error("createDepartment error:", error);
     res
       .status(500)

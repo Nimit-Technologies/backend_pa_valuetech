@@ -57,6 +57,14 @@ export const createRole = async (req, res) => {
     });
     res.status(201).json({ success: true, data: formatRoleResponse(role) });
   } catch (error) {
+    // Unique (name, department_id) index — a concurrent create slipped past
+    // the findRoleByName check above.
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+        message: "Role already exists in this department",
+      });
+    }
     console.error("createRole error:", error);
     res.status(500).json({ success: false, message: "Failed to create role" });
   }

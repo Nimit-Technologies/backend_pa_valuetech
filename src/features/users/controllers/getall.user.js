@@ -3,7 +3,7 @@ import { formatUserResponse } from "../utils/user-history.js";
 
 export const getAllUsers = async (req, res) => {
   try {
-    const { direction, cursorId } = req.query;
+    const { direction, cursorId, search } = req.query;
 
     const {
       users,
@@ -13,7 +13,9 @@ export const getAllUsers = async (req, res) => {
       hasPreviousPage,
       userLength,
       dataLimit,
-    } = await getAllUsersService({ direction, cursorId });
+      totalCount,
+      totalActiveCount,
+    } = await getAllUsersService({ direction, cursorId, search });
 
     res.json({
       success: true,
@@ -24,6 +26,8 @@ export const getAllUsers = async (req, res) => {
       hasPreviousPage,
       userLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     });
   } catch (error) {
     console.error("getAllUsers error:", error);

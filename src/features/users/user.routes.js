@@ -23,7 +23,7 @@ router.post("/reset-password", passwordResetLimiter, resetPassword);
 
 router.post("/aadhaar", isAuthenticated, getOriginalAadhaar);
 
-router.get("/all-user", getAllUsers);
+router.get("/all-user", isAuthenticated, isAdmin, getAllUsers);
 router.get("/:id", isAuthenticated, getUserById);
 router.post("/create-user", isAuthenticated, isAdmin, createUser);
 router.put("/update/:id", isAuthenticated, isAdmin, updateUser);

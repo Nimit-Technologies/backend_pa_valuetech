@@ -12,3 +12,4 @@ npm-debug.log*
 /src/generated/prisma
 .agents/*
 .claude/*
+api-documentation/*

@@ -6,9 +6,6 @@
 
 */
 -- DropIndex
-DROP INDEX "users_aadhaar_number_idx";
-
--- DropIndex
 DROP INDEX "users_aadhaar_number_key";
 
 -- AlterTable

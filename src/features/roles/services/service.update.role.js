@@ -4,14 +4,12 @@ import {
   branchSelect,
   shapeRole,
 } from "./role.service.helpers.js";
+import { recordRoleTransition } from "../utils/role-count.js";
 
-export const updateRole = async (
-  id,
-  data,
-  historyEntry,
-  existingHistory = [],
-) => {
-  const currentHistory = Array.isArray(existingHistory) ? existingHistory : [];
+export const updateRole = async (id, data, historyEntry, existing) => {
+  const currentHistory = Array.isArray(existing?.history)
+    ? existing.history
+    : [];
   const updatedHistory = historyEntry
     ? [...currentHistory, historyEntry]
     : currentHistory;
@@ -28,5 +26,7 @@ export const updateRole = async (
     },
   });
 
+  // `data` may flip is_active; the transition works that out from the rows.
+  recordRoleTransition(existing, role);
   return shapeRole(role);
 };

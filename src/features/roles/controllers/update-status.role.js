@@ -43,12 +43,7 @@ export const updateRoleStatus = async (req, res, next) => {
       is_active ? "ACTIVATE" : "DEACTIVATE",
       req.user,
     );
-    const role = await setRoleStatus(
-      id,
-      is_active,
-      historyEntry,
-      existing.history,
-    );
+    const role = await setRoleStatus(id, is_active, historyEntry, existing);
 
     logAuthEvent(is_active ? "role_activated" : "role_deactivated", {
       role_id: id,

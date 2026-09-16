@@ -1,14 +1,17 @@
 import prisma from "../../../prisma/client.js";
+import { recordUserTransition } from "../utils/user-count.js";
 
 const relationSelect = { select: { id: true, name: true } };
 
-export const restoreUser = (id, historyEntry, existingHistory = []) => {
-  const currentHistory = Array.isArray(existingHistory) ? existingHistory : [];
+export const restoreUser = async (id, historyEntry, existing) => {
+  const currentHistory = Array.isArray(existing?.history)
+    ? existing.history
+    : [];
   const updatedHistory = historyEntry
     ? [...currentHistory, historyEntry]
     : currentHistory;
 
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id },
     data: {
       deleted_at: null,
@@ -34,4 +37,8 @@ export const restoreUser = (id, historyEntry, existingHistory = []) => {
       deleted_at: true,
     },
   });
+
+  // The row re-enters the counted set as active: total +1, active +1.
+  recordUserTransition(existing, user);
+  return user;
 };

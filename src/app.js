@@ -49,8 +49,6 @@ app.get("/health", (req, res) => {
 // -- API Routes --
 app.use("/api/v1", routes);
 
-// -- Unmatched routes: turn Express's default HTML 404 into the API's JSON
-// error shape, and make sure it still goes through globalErrorHandler.
 app.use((req, res, next) => {
   next(new AppError(`Route ${req.originalUrl} not found`, 404));
 });

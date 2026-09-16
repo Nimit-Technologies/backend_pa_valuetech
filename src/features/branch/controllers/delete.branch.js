@@ -9,9 +9,6 @@ export const deleteBranch = async (req, res, next) => {
 
     if (!isValidCuid(id)) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res

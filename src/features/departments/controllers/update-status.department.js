@@ -48,7 +48,7 @@ export const updateDepartmentStatus = async (req, res, next) => {
       id,
       is_active,
       historyEntry,
-      existing.history,
+      existing,
     );
 
     logAuthEvent(

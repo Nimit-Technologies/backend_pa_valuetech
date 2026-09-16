@@ -6,13 +6,31 @@ import {
   branchSelect,
   shapeRole,
 } from "./role.service.helpers.js";
+import { getRoleCounts } from "../utils/role-count.js";
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
+
+const getSearchRoleCounts = async (nameFilter) => {
+  const groups = await prisma.role.groupBy({
+    by: ["is_active"],
+    where: { deleted_at: null, name: nameFilter },
+    _count: { _all: true },
+  });
+
+  let total = 0;
+  let active = 0;
+  for (const { is_active, _count } of groups) {
+    total += _count._all;
+    if (is_active) active += _count._all;
+  }
+  return { total, active };
+};
 
 export const getAllRoles = async (query) => {
   const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
+  const search = String(query.search ?? "").trim();
 
   if (!VALID_DIRECTIONS.includes(direction)) {
     const error = new Error(
@@ -34,15 +52,25 @@ export const getAllRoles = async (query) => {
     }
   }
 
-  const initialRoles = await prisma.role.findMany({
-    where: filter,
-    orderBy,
-    take: dataLimit + 1,
-    include: {
-      department: departmentSelect,
-      branch: branchSelect,
-    },
-  });
+  if (search) {
+    filter.name = { contains: search, mode: "insensitive" };
+  }
+
+  const [initialRoles, counts] = await Promise.all([
+    prisma.role.findMany({
+      where: filter,
+      orderBy,
+      take: dataLimit + 1,
+      include: {
+        department: departmentSelect,
+        branch: branchSelect,
+      },
+    }),
+    search ? getSearchRoleCounts(filter.name) : getRoleCounts(),
+  ]);
+
+  const totalCount = counts.total;
+  const totalActiveCount = counts.active;
 
   if (!initialRoles.length) {
     return {
@@ -52,6 +80,8 @@ export const getAllRoles = async (query) => {
       hasNextPage: false,
       hasPreviousPage: false,
       roleLength: 0,
+      totalCount,
+      totalActiveCount,
       dataLimit,
     };
   }
@@ -77,6 +107,8 @@ export const getAllRoles = async (query) => {
     hasPreviousPage:
       direction === PAGINATION_DIRECTION.PREVIOUS ? hasMore : !!cursorId,
     roleLength: finalRoles.length,
+    totalCount,
+    totalActiveCount,
     dataLimit,
   };
 };

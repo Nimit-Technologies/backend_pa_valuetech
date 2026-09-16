@@ -12,13 +12,6 @@ export const formatDateTime = (date = new Date()) => {
   return `${d} ${t}`;
 };
 
-/**
- * Creates a standardized role audit history record.
- *
- * @param {string} action - The route/operation action (e.g. "CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "STATUS_CHANGE")
- * @param {Object} [user] - The req.user object attached by isAuthenticated middleware
- * @returns {Object} History entry object containing date_time, user_full_name, department_name, role_name, branch_name, and employee_id
- */
 export const createRoleHistoryEntry = (action, user) => {
   const date_time = formatDateTime();
   if (!user) {
@@ -69,14 +62,6 @@ export const createRoleHistoryEntry = (action, user) => {
   };
 };
 
-/**
- * Formats role data for API responses.
- * When NODE_ENV === 'development', includes history, created_at, updated_at, and deleted_at (formatted).
- * Otherwise, omits these fields.
- *
- * @param {Object|Array} data - Single role object or array of role objects
- * @returns {Object|Array} Formatted role data
- */
 export const formatRoleResponse = (data) => {
   if (!data) return data;
 

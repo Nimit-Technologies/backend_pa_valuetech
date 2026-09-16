@@ -4,6 +4,7 @@ import {
   branchSelect,
   shapeRole,
 } from "./role.service.helpers.js";
+import { recordRoleTransition } from "../utils/role-count.js";
 
 export const createRole = async (
   name,
@@ -24,5 +25,6 @@ export const createRole = async (
     },
   });
 
+  recordRoleTransition(null, role);
   return shapeRole(role);
 };

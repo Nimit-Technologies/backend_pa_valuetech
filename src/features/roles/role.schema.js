@@ -19,5 +19,7 @@ export const updateRoleSchema = z
       .transform((val) => val.trim().toLowerCase())
       .optional(),
     is_active: z.boolean().optional(),
+
+    department_id: z.string().min(1, "Department ID is required").optional(),
   })
   .strict();

@@ -49,7 +49,7 @@ export const restoreRole = async (req, res, next) => {
       return;
 
     const historyEntry = createRoleHistoryEntry("RESTORE", req.user);
-    const role = await restoreRoleService(id, historyEntry, existing.history);
+    const role = await restoreRoleService(id, historyEntry, existing);
 
     logAuthEvent("role_restored", {
       role_id: id,

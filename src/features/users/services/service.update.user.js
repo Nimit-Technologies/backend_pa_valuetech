@@ -1,15 +1,18 @@
 import prisma from "../../../prisma/client.js";
+import { recordUserTransition } from "../utils/user-count.js";
 
 const relationSelect = { select: { id: true, name: true } };
 
-export const updateUser = (id, data, historyEntry, existingHistory = []) => {
+export const updateUser = async (id, data, historyEntry, existing) => {
   const { branch_id, department_id, role_id, address, ...rest } = data;
-  const currentHistory = Array.isArray(existingHistory) ? existingHistory : [];
+  const currentHistory = Array.isArray(existing?.history)
+    ? existing.history
+    : [];
   const updatedHistory = historyEntry
     ? [...currentHistory, historyEntry]
     : currentHistory;
 
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id },
     data: {
       ...rest,
@@ -35,6 +38,11 @@ export const updateUser = (id, data, historyEntry, existingHistory = []) => {
       address: true,
       created_at: true,
       updated_at: true,
+      deleted_at: true,
     },
   });
+
+  // `data` may flip is_active; the transition works that out from the rows.
+  recordUserTransition(existing, user);
+  return user;
 };
