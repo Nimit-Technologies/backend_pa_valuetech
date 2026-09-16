@@ -104,3 +104,42 @@ export const updateUserSchema = z
     address: partialAddressSchema.optional(),
   })
   .strict();
+
+// Self-service PUT /user/profile — deliberately excludes employee_id,
+// branch_id, department_id, role_id, is_active, password and
+// confirm_password. Those stay admin-only (PUT /user/update/:id) or have
+// their own dedicated route (PATCH /user/change-password).
+export const updateOwnProfileSchema = z
+  .object({
+    first_name: z
+      .string()
+      .min(1)
+      .max(50)
+      .transform((val) => val.trim().toLowerCase())
+      .optional(),
+    last_name: z
+      .string()
+      .min(1)
+      .max(50)
+      .transform((val) => val.trim().toLowerCase())
+      .optional(),
+    email: z
+      .string()
+      .email()
+      .max(100)
+      .transform((val) => val.trim().toLowerCase())
+      .optional(),
+    phone: z
+      .string()
+      .length(10, "Phone number must be 10 digits")
+      .regex(/^\d+$/, "Phone must contain only digits")
+      .optional(),
+    aadhaar_number: z
+      .string()
+      .length(12, "Aadhaar number must be 12 digits")
+      .regex(/^\d+$/, "Aadhaar number must contain only digits")
+      .transform((val) => val.trim())
+      .optional(),
+    address: partialAddressSchema.optional(),
+  })
+  .strict();

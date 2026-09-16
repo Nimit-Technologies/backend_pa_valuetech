@@ -10,38 +10,14 @@ import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
-import {
-  encrypt,
-  blindIndex,
-  decryptStored,
-} from "../../../utils/encryption.js";
+import { encrypt, blindIndex } from "../../../utils/encryption.js";
 import bcrypt from "bcrypt";
 import { CREDENTIALS } from "../../../constant/credentials.js";
 import {
   createUserHistoryEntry,
   formatUserResponse,
 } from "../utils/user-history.js";
-
-const hasChanges = (existing, data) =>
-  Object.entries(data).some(([key, value]) => {
-    if (key === "password") return true;
-    if (key === "confirm_password") return false;
-    // `existing.aadhaar_number` is ciphertext — compare against the
-    // decrypted value so an unchanged Aadhaar doesn't look like a change.
-    if (key === "aadhaar_number") {
-      return decryptStored(existing.aadhaar_number) !== value;
-    }
-    if (key === "address") {
-      if (!value || typeof value !== "object") return false;
-      return Object.entries(value).some(
-        ([addrKey, addrValue]) => existing.address?.[addrKey] !== addrValue,
-      );
-    }
-    if (key === "branch_id") return existing.branch?.id !== value;
-    if (key === "department_id") return existing.department?.id !== value;
-    if (key === "role_id") return existing.role?.id !== value;
-    return existing[key] !== value;
-  });
+import { hasChanges } from "../utils/user-has-changes.js";
 
 export const updateUser = async (req, res, next) => {
   try {

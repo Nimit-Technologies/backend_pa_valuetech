@@ -3,6 +3,7 @@ import { getAllUsers } from "./controllers/getall.user.js";
 import { getUserById } from "./controllers/get.userById.js";
 import { createUser } from "./controllers/create.user.js";
 import { updateUser } from "./controllers/update.user.js";
+import { updateOwnProfile } from "./controllers/update-profile.user.js";
 import { deleteUser } from "./controllers/delete.user.js";
 import { softDeleteUser } from "./controllers/softDelete.user.js";
 import { updateUserStatus } from "./controllers/update-status.user.js";
@@ -18,6 +19,7 @@ import { passwordResetLimiter } from "../../middlewares/password-reset-limiter.j
 const router = Router();
 
 router.patch("/change-password", isAuthenticated, changePassword);
+router.put("/profile", isAuthenticated, updateOwnProfile);
 router.post("/forgot-password", passwordResetLimiter, forgotPassword);
 router.post("/reset-password", passwordResetLimiter, resetPassword);
 
