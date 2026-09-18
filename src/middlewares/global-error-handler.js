@@ -46,13 +46,6 @@ const sendErrorProd = (err, res) => {
 };
 
 export const globalErrorHandler = (err, req, res, next) => {
-  // Defensive: this is the last error handler in the chain, so if
-  // something upstream does `throw "a string"` / `throw { ... }` instead
-  // of `throw new Error(...)`, `err` won't be an Error instance. Assigning
-  // `err.statusCode` on a primitive throws (ES modules are always strict
-  // mode), which would otherwise blow up this handler itself. AppError,
-  // ZodError, and Prisma's errors are all real Error subclasses, so this
-  // only ever kicks in for a genuinely non-Error throw.
   if (!(err instanceof Error)) {
     err = new Error(typeof err === "string" ? err : "Non-Error value thrown", {
       cause: err,
@@ -65,11 +58,6 @@ export const globalErrorHandler = (err, req, res, next) => {
   if (process.env.NODE_ENV === "development") {
     sendErrorDev(err, res);
   } else {
-    // Clone error to preserve prototype if possible, but simplest is to pass err directly
-    // or handle specific types. ZodError needs special handling as it doesn't inherit AppError.
-
-    // In a real app we might want to cast specific errors (like Mongoose CastError) to AppError here
-
     sendErrorProd(err, res);
   }
 };

@@ -1,5 +1,6 @@
 import { getUserById as getUserByIdService } from "../services/service.getById.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { formatUserResponse } from "../utils/user-history.js";
 
 export const getUserById = async (req, res, next) => {
   try {
@@ -8,9 +9,6 @@ export const getUserById = async (req, res, next) => {
 
     if (!isValidId) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res
@@ -25,7 +23,7 @@ export const getUserById = async (req, res, next) => {
         .json({ success: false, message: "User not found" });
     }
 
-    res.json({ success: true, data: user });
+    res.json({ success: true, data: formatUserResponse(user) });
   } catch (error) {
     console.error("getUserById error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch user" });

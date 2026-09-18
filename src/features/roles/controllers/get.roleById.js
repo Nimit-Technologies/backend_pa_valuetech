@@ -1,5 +1,6 @@
 import { getRoleById as getRoleByIdService } from "../services/service.getById.role.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { formatRoleResponse } from "../utils/role-history.js";
 
 export const getRoleById = async (req, res, next) => {
   try {
@@ -25,7 +26,7 @@ export const getRoleById = async (req, res, next) => {
         .json({ success: false, message: "Role not found" });
     }
 
-    res.json({ success: true, data: role });
+    res.json({ success: true, data: formatRoleResponse(role) });
   } catch (error) {
     console.error("getRoleById error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch role" });

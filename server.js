@@ -1,38 +1,23 @@
-import app from "./src/app.js";
-import prisma from "./src/prisma/client.js";
+import { validateEnvironment } from "./src/config/env.config.js";
 import { CREDENTIALS } from "./src/constant/credentials.js";
 
-const REQUIRED_ENV_VARS = [
-  "APP_PROTOCOL",
-  "APPLICATION_BASE_URL",
-  "PORT",
-  // Without this, the server boots fine and only fails per-request, inside
-  // login's try/catch, the first time someone actually signs in — a
-  // misconfiguration that would otherwise stay silent until then.
-  "JWT_SECRET",
-];
+validateEnvironment();
 
-function assertRequiredEnv() {
-  const missing = REQUIRED_ENV_VARS.filter((key) => !CREDENTIALS[key]);
-  if (missing.length > 0) {
-    console.error(
-      `Missing required environment variable(s): ${missing.join(", ")}. Check your .env file.`,
-    );
-    process.exit(1);
-  }
+const { default: app } = await import("./src/app.js");
+const { default: prisma } = await import("./src/prisma/client.js");
 
-  const port = Number(CREDENTIALS.PORT);
+function resolvePort() {
+  const port = Number(CREDENTIALS?.PORT);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
     console.error(
-      `Invalid PORT "${CREDENTIALS.PORT}" — must be an integer between 1 and 65535.`,
+      `Invalid PORT "${CREDENTIALS?.PORT}" — must be an integer between 1 and 65535.`,
     );
     process.exit(1);
   }
-
   return port;
 }
 
-const PORT = assertRequiredEnv();
+const PORT = resolvePort();
 
 let server;
 let shuttingDown = false;
@@ -42,7 +27,7 @@ function shutdown(signal) {
     if (shuttingDown) return;
     shuttingDown = true;
 
-    console.log(`${signal} received: shutting down gracefully...`);
+    console.info(`${signal} received: shutting down gracefully...`);
 
     try {
       if (server) {
@@ -51,7 +36,7 @@ function shutdown(signal) {
         });
       }
       await prisma.$disconnect();
-      console.log("Shutdown complete.");
+      console.info("Shutdown complete.");
       process.exit(0);
     } catch (error) {
       console.error("Error during shutdown:", error);
@@ -63,10 +48,6 @@ function shutdown(signal) {
 process.on("SIGINT", shutdown("SIGINT"));
 process.on("SIGTERM", shutdown("SIGTERM"));
 
-// Last-resort safety nets: without these, an unawaited rejected promise or a
-// thrown error outside Express's request cycle crashes the process with a
-// raw, unlogged stack trace (or, for unhandledRejection, keeps running in an
-// unknown state). Fail fast and loud instead.
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled Promise Rejection:", reason);
   process.exit(1);
@@ -78,7 +59,7 @@ process.on("uncaughtException", (error) => {
 });
 
 server = app.listen(PORT, () => {
-  console.log(
+  console.info(
     `Server running on url ${CREDENTIALS.APP_PROTOCOL}://${CREDENTIALS.APPLICATION_BASE_URL}:${PORT}`,
   );
 });

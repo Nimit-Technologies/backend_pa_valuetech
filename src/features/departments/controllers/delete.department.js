@@ -2,14 +2,12 @@ import { getDepartmentById } from "../services/service.getById.department.js";
 import { deleteDepartment as deleteDepartmentService } from "../services/service.delete.department.js";
 import { getDepartmentDependents } from "../services/service.checkDependents.department.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
-import { logAuthEvent } from "../../../utils/audit-log.js";
 
 export const deleteDepartment = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const isValidId = isValidCuid(id);
 
-    if (!isValidId) {
+    if (!isValidCuid(id)) {
       if (!looksLikeAnId(id)) {
         // Not even shaped like an id — most likely a mistyped/renamed
         // route falling through to :id. Let Express keep matching so
@@ -51,14 +49,6 @@ export const deleteDepartment = async (req, res, next) => {
     }
 
     await deleteDepartmentService(id);
-
-    logAuthEvent("department_deleted", {
-      department_id: id,
-      actor_id: req.user?.id ?? null,
-      ip: req.ip,
-      success: true,
-    });
-
     res.json({ success: true, message: "Department deleted successfully" });
   } catch (error) {
     if (error?.code === "P2003" || error?.code === "P2014") {

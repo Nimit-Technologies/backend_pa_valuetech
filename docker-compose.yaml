@@ -1,0 +1,88 @@
+# Deployment target: Coolify on a standalone VPS.
+#
+# There is no database service here on purpose — DATABASE_URL / DIRECT_URL
+# point at Supabase's managed, pre-pooled Postgres (see .env.example), so the
+# API container is the only thing this stack needs to run.
+#
+# Coolify setup:
+#   1. Create the resource as "Docker Compose", pointed at this repo/file.
+#   2. Add every variable referenced below (${VAR}) under the resource's
+#      "Environment Variables" tab — Coolify substitutes them at deploy time,
+#      nothing secret is stored in this file.
+#   3. Set the service's Domain/FQDN in the Coolify UI. Coolify's Traefik
+#      proxy reaches the container over the internal network using the
+#      `expose`d port below — leave `ports:` commented out so traffic can't
+#      skip the proxy. Only uncomment it for a bare `docker compose up` test
+#      directly on the VPS, without Coolify in front.
+#   4. Run migrations out-of-band, not on every boot: use Coolify's
+#      "Pre-deployment Command" (or `docker compose exec app npx prisma
+#      migrate deploy`) so it runs once per release, not once per replica.
+#
+# Known limitation at scale: express-rate-limit (src/middlewares/global-limiter.js)
+# keeps counters in-memory per process. If you scale this service to N
+# replicas in Coolify, each replica enforces the limit independently, so the
+# effective ceiling becomes N times the configured value. Fine for a single
+# well-resourced instance; move the limiter to a shared Redis store before
+# running multiple replicas.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      APP_NAME: ${APP_NAME:-PA_Valuetech_Server}
+      PORT: ${PORT:-5000}
+      APP_PROTOCOL: ${APP_PROTOCOL:-http}
+      APP_BASE_URL: ${APP_BASE_URL}
+      IP_ADDRESS: ${IP_ADDRESS:-}
+      DATA_LIMIT: ${DATA_LIMIT:-10}
+      DATABASE_URL: ${DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-24h}
+      PEPPER_SECRET: ${PEPPER_SECRET}
+      SALT_ROUNDS: ${SALT_ROUNDS:-12}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      BLIND_INDEX_KEY: ${BLIND_INDEX_KEY}
+      BODY_LIMIT: ${BODY_LIMIT:-10}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+    expose:
+      - "${PORT:-5000}"
+    # ports:
+    #   - "${PORT:-5000}:${PORT:-5000}"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:'+(process.env.PORT||5000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "${APP_CPU_LIMIT:-2}"
+          memory: ${APP_MEM_LIMIT:-1024M}
+        reservations:
+          cpus: "${APP_CPU_RESERVATION:-0.5}"
+          memory: ${APP_MEM_RESERVATION:-256M}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

@@ -18,5 +18,8 @@ export const updateDepartmentSchema = z
       .transform((val) => val.trim().toLowerCase())
       .optional(),
     is_active: z.boolean().optional(),
+    // Moves the department to another branch. Validated against the branch
+    // table in the controller, same as create.
+    branch_id: z.string().min(1, "Branch ID is required").optional(),
   })
   .strict();

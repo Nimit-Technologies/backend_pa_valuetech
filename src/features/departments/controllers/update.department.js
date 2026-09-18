@@ -2,8 +2,14 @@ import { getDepartmentById } from "../services/service.getById.department.js";
 import { findDepartmentByName } from "../services/service.findByName.department.js";
 import { updateDepartment as updateDepartmentService } from "../services/service.update.department.js";
 import { updateDepartmentSchema } from "../department.schema.js";
+import { getBranchById } from "../../branch/services/service.getById.branch.js";
+import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createDepartmentHistoryEntry,
+  formatDepartmentResponse,
+} from "../utils/department-history.js";
 
 export const updateDepartment = async (req, res, next) => {
   try {
@@ -43,19 +49,36 @@ export const updateDepartment = async (req, res, next) => {
       });
     }
 
-    const { name, is_active } = parsed.data;
+    const { name, is_active, branch_id } = parsed.data;
 
     const noNameChange = name === undefined || name === existing.name;
     const noActiveChange =
       is_active === undefined || is_active === existing.is_active;
-    if (noNameChange && noActiveChange) {
+    const noBranchChange =
+      branch_id === undefined || branch_id === existing.branch_id;
+    if (noNameChange && noActiveChange && noBranchChange) {
       return res.json({ success: true, message: "No changes are found" });
     }
 
-    // Only hit the DB for a duplicate if the name is actually changing —
-    // scoped to the same branch, excludes this department's own row.
-    if (!noNameChange) {
-      const duplicate = await findDepartmentByName(name, existing.branch_id);
+    // A move must land in a branch that exists and is live, exactly like
+    // assigning a branch on create.
+    if (!noBranchChange) {
+      const branch = await getBranchById(branch_id);
+      if (
+        respondIfInvalidParent(res, branch, {
+          label: "Branch",
+          action: "move departments into it",
+        })
+      )
+        return;
+    }
+
+    // Names are unique per branch, so re-check whenever the name OR the
+    // branch changes, against the values the row will end up with.
+    if (!noNameChange || !noBranchChange) {
+      const targetName = noNameChange ? existing.name : name;
+      const targetBranchId = noBranchChange ? existing.branch_id : branch_id;
+      const duplicate = await findDepartmentByName(targetName, targetBranchId);
       if (duplicate && duplicate.id !== id) {
         return res.status(409).json({
           success: false,
@@ -64,17 +87,38 @@ export const updateDepartment = async (req, res, next) => {
       }
     }
 
-    const department = await updateDepartmentService(id, parsed.data);
+    const historyEntry = createDepartmentHistoryEntry("UPDATE", req.user);
+    const department = await updateDepartmentService(
+      id,
+      parsed.data,
+      historyEntry,
+      existing,
+    );
 
     logAuthEvent("department_updated", {
       department_id: id,
       actor_id: req.user?.id ?? null,
       ip: req.ip,
       success: true,
+      ...(noBranchChange
+        ? {}
+        : { from_branch_id: existing.branch_id, to_branch_id: branch_id }),
     });
 
-    res.json({ success: true, data: department });
+    res.json({
+      success: true,
+      message: "Department updated successfully",
+      data: formatDepartmentResponse(department),
+    });
   } catch (error) {
+    // `name` is globally unique at the DB level; a concurrent write slipped
+    // past the duplicate check above.
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+        message: "Department with this name already exists",
+      });
+    }
     console.error("updateDepartment error:", error);
     res
       .status(500)

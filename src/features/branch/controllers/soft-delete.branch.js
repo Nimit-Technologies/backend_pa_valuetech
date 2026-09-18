@@ -2,6 +2,8 @@ import { getBranchById } from "../services/service.getById.branch.js";
 import { softDeleteBranch as softDeleteBranchService } from "../services/service.softDelete.branch.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import { createBranchHistoryEntry } from "../utils/branch-history.js";
+
 export const softDeleteBranch = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -9,9 +11,6 @@ export const softDeleteBranch = async (req, res, next) => {
 
     if (!isValidId) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res
@@ -25,7 +24,8 @@ export const softDeleteBranch = async (req, res, next) => {
         .json({ success: false, message: "Branch not found" });
     }
 
-    await softDeleteBranchService(id);
+    const historyEntry = createBranchHistoryEntry("SOFT_DELETE", req.user);
+    await softDeleteBranchService(id, historyEntry, existing);
 
     logAuthEvent("branch_soft_deleted", {
       branch_id: id,

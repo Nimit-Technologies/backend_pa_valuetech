@@ -1,8 +1,12 @@
 model Role {
   id        String  @id @default(cuid())
-  name      String  @unique
+  // Unique per department, not globally: "pranjal" may exist in both
+  // "honey" and "baby". See @@unique below.
+  name      String
   is_active Boolean @default(true)
 
+  branch_id     String
+  branch        Branch     @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   department_id String
   department    Department @relation(fields: [department_id], references: [id], onDelete: Restrict)
 
@@ -10,11 +14,16 @@ model Role {
   remarks     Remark[]
   allocations Allocation[]
 
+  history    Json      @default("[]")
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  @@index([name, department_id])
+  // Names are lowercased by the zod schema before they are written, so this
+  // behaves case-insensitively. It also serves the (name, department_id)
+  // lookups the old three-column index covered.
+  @@unique([name, department_id])
   @@index([department_id])
+  @@index([branch_id])
   @@map("roles")
 }

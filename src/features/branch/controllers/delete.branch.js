@@ -2,17 +2,13 @@ import { getBranchById } from "../services/service.getById.branch.js";
 import { deleteBranch as deleteBranchService } from "../services/service.delete.branch.js";
 import { getBranchDependents } from "../services/service.checkDependents.branch.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
-import { logAuthEvent } from "../../../utils/audit-log.js";
+
 export const deleteBranch = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const isValidId = isValidCuid(id);
 
-    if (!isValidId) {
+    if (!isValidCuid(id)) {
       if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
         return next();
       }
       return res
@@ -58,14 +54,6 @@ export const deleteBranch = async (req, res, next) => {
     }
 
     await deleteBranchService(id);
-
-    logAuthEvent("branch_deleted", {
-      branch_id: id,
-      actor_id: req.user?.id ?? null,
-      ip: req.ip,
-      success: true,
-    });
-
     res.json({ success: true, message: "Branch deleted successfully" });
   } catch (error) {
     if (error?.code === "P2003" || error?.code === "P2014") {

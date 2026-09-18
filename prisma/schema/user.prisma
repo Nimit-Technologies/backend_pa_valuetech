@@ -1,21 +1,17 @@
 model User {
-  id             String  @id @default(cuid())
-  employee_id    String  @unique
-  first_name     String
-  last_name      String
-  email          String? @unique
-  phone          String  @unique
-  password       String
-  aadhaar_number String @unique
-  is_active      Boolean @default(true)
+  id          String  @id @default(cuid())
+  employee_id String  @unique
+  first_name  String
+  last_name   String
+  email       String? @unique
+  phone       String  @unique
+  password    String
 
-  // Bumped on logout and on any admin change that could alter what an
-  // already-issued token is allowed to do (role/branch/department/status/
-  // password). isAuthenticated compares this against the value embedded in
-  // the JWT at login time and rejects the token on a mismatch, even if its
-  // signature and exp are still valid — this is what lets logout and
-  // privilege changes actually revoke a token instead of just clearing the
-  // browser's cookie.
+  aadhaar_number String
+  aadhaar_hash   String @unique
+
+  is_active Boolean @default(true)
+
   token_version Int @default(0)
 
   branch_id     String
@@ -36,6 +32,9 @@ model User {
   allocations      Allocation[] @relation("AllocationUser")
   allocations_made Allocation[] @relation("AllocationAllocatedBy")
 
+  password_reset_tokens PasswordResetToken[]
+
+  history               Json                @default("[]")
   created_at            DateTime            @default(now())
   updated_at            DateTime            @updatedAt
   deleted_at            DateTime?
@@ -47,6 +46,5 @@ model User {
   @@index([employee_id])
   @@index([email])
   @@index([phone])
-  @@index([aadhaar_number])
   @@map("users")
 }

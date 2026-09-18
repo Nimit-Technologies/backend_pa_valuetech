@@ -4,6 +4,10 @@ import { getDepartmentById } from "../../departments/services/service.getById.de
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createRoleHistoryEntry,
+  formatRoleResponse,
+} from "../utils/role-history.js";
 
 export const restoreRole = async (req, res, next) => {
   try {
@@ -44,7 +48,8 @@ export const restoreRole = async (req, res, next) => {
     )
       return;
 
-    const role = await restoreRoleService(id);
+    const historyEntry = createRoleHistoryEntry("RESTORE", req.user);
+    const role = await restoreRoleService(id, historyEntry, existing);
 
     logAuthEvent("role_restored", {
       role_id: id,
@@ -56,7 +61,7 @@ export const restoreRole = async (req, res, next) => {
     res.json({
       success: true,
       message: "Role restored successfully",
-      data: role,
+      data: formatRoleResponse(role),
     });
   } catch (error) {
     console.error("restoreRole error:", error);

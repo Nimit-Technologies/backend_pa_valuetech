@@ -1,8 +1,10 @@
 import { getAllDepartments as getAllDepartmentsService } from "../services/service.getall.department.js";
+import { formatDepartmentResponse } from "../utils/department-history.js";
 
 export const getAllDepartments = async (req, res) => {
   try {
-    const { direction, cursorId } = req.query;
+    const { direction, cursorId, search } = req.query;
+
     const {
       departments,
       departmentFirstId,
@@ -11,16 +13,21 @@ export const getAllDepartments = async (req, res) => {
       hasPreviousPage,
       departmentLength,
       dataLimit,
-    } = await getAllDepartmentsService({ direction, cursorId });
+      totalCount,
+      totalActiveCount,
+    } = await getAllDepartmentsService({ direction, cursorId, search });
+
     res.json({
       success: true,
-      data: departments,
+      data: formatDepartmentResponse(departments),
       departmentFirstId,
       departmentLastId,
       hasNextPage,
       hasPreviousPage,
       departmentLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     });
   } catch (error) {
     console.error("getAllDepartments error:", error);

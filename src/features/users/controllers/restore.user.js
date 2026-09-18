@@ -6,6 +6,10 @@ import { getRoleById } from "../../roles/services/service.getById.role.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createUserHistoryEntry,
+  formatUserResponse,
+} from "../utils/user-history.js";
 
 export const restoreUser = async (req, res, next) => {
   try {
@@ -38,9 +42,9 @@ export const restoreUser = async (req, res, next) => {
     }
 
     const [branch, department, role] = await Promise.all([
-      getBranchById(existing.branch_id),
-      getDepartmentById(existing.department_id),
-      getRoleById(existing.role_id),
+      getBranchById(existing.branch?.id),
+      getDepartmentById(existing.department?.id),
+      getRoleById(existing.role?.id),
     ]);
 
     if (
@@ -65,7 +69,8 @@ export const restoreUser = async (req, res, next) => {
     )
       return;
 
-    const user = await restoreUserService(id);
+    const historyEntry = createUserHistoryEntry("RESTORE", req.user);
+    const user = await restoreUserService(id, historyEntry, existing);
 
     logAuthEvent("user_restored", {
       user_id: id,
@@ -77,7 +82,7 @@ export const restoreUser = async (req, res, next) => {
     res.json({
       success: true,
       message: "User restored successfully",
-      data: user,
+      data: formatUserResponse(user),
     });
   } catch (error) {
     console.error("restoreUser error:", error);

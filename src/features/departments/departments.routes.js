@@ -16,6 +16,7 @@ router.get("/all-department", isAuthenticated, isAdmin, getAllDepartments);
 router.get("/:id", isAuthenticated, isAdmin, getDepartmentById);
 router.post("/create-department", isAuthenticated, isAdmin, createDepartment);
 router.put("/update/:id", isAuthenticated, isAdmin, updateDepartment);
+router.delete("/delete/:id", isAuthenticated, isAdmin, deleteDepartment);
 router.delete(
   "/soft-delete/:id",
   isAuthenticated,
@@ -24,6 +25,5 @@ router.delete(
 );
 router.patch("/status/:id", isAuthenticated, isAdmin, updateDepartmentStatus);
 router.patch("/restore/:id", isAuthenticated, isAdmin, restoreDepartment);
-router.delete("/delete/:id", isAuthenticated, isAdmin, deleteDepartment);
 
 export default router;

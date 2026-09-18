@@ -2,6 +2,10 @@ import { getUserById } from "../services/service.getById.user.js";
 import { softDeleteUser as softDeleteUserService } from "../services/service.softDelete.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createUserHistoryEntry,
+  formatUserResponse,
+} from "../utils/user-history.js";
 
 export const softDeleteUser = async (req, res, next) => {
   try {
@@ -32,7 +36,8 @@ export const softDeleteUser = async (req, res, next) => {
         .json({ success: false, message: "User is already deleted" });
     }
 
-    const user = await softDeleteUserService(id);
+    const historyEntry = createUserHistoryEntry("SOFT_DELETE", req.user);
+    const user = await softDeleteUserService(id, historyEntry, existing);
 
     logAuthEvent("user_soft_deleted", {
       user_id: id,
@@ -44,7 +49,7 @@ export const softDeleteUser = async (req, res, next) => {
     res.json({
       success: true,
       message: "User soft-deleted successfully",
-      data: user,
+      data: formatUserResponse(user),
     });
   } catch (error) {
     console.error("softDeleteUser error:", error);

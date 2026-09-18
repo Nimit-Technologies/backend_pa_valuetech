@@ -10,8 +10,8 @@ export const logout = async (req, res) => {
   if (!token) {
     res.clearCookie("token", COOKIE_OPTIONS);
     return res
-      .status(401)
-      .json({ success: false, message: "Please login first" });
+      .status(200)
+      .json({ success: true, message: "Logged out successfully" });
   }
 
   let decoded;
@@ -20,14 +20,9 @@ export const logout = async (req, res) => {
       algorithms: ["HS256"],
     });
   } catch {
-    // invalid/expired token; cookie is cleared below regardless of outcome
+    // Invalid/expired token is expected during logout — proceed to clear cookie
   }
 
-  // Revoke server-side, not just client-side: bump token_version so this
-  // token — and any other copy of it that might exist outside this browser
-  // (XSS exfiltration, a proxy/access log, a synced browser session) — is
-  // rejected by isAuthenticated from now on, not merely removed from this
-  // browser's cookie jar.
   if (decoded?.id) {
     try {
       await bumpTokenVersion(decoded.id);

@@ -3,6 +3,7 @@ export const UNIQUE_FIELD_LABELS = {
   email: "email",
   phone: "phone number",
   aadhaar_number: "aadhaar number",
+  aadhaar_hash: "aadhaar number",
   address_id: "address",
   name: "name",
 };

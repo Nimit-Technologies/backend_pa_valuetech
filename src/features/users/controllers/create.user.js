@@ -4,12 +4,16 @@ import { userSchema } from "../user.schema.js";
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { getDepartmentById } from "../../departments/services/service.getById.department.js";
 import { getRoleById } from "../../roles/services/service.getById.role.js";
-import bcrypt from "bcrypt";
-import { CREDENTIALS } from "../../../constant/credentials.js";
+import { hashPassword } from "../utils/password.util.js";
+import { encrypt, blindIndex } from "../../../utils/encryption.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createUserHistoryEntry,
+  formatUserResponse,
+} from "../utils/user-history.js";
 
 export const createUser = async (req, res) => {
   try {
@@ -88,23 +92,27 @@ export const createUser = async (req, res) => {
     )
       return;
 
-    const hashedPassword = await bcrypt.hash(password, CREDENTIALS.SALT_ROUNDS);
+    const hashedPassword = await hashPassword(password);
 
-    const user = await createUserService({
-      employee_id,
-      first_name,
-      last_name,
-      email,
-      phone,
-      password: hashedPassword,
-      aadhaar_number,
-      branch_id,
-      department_id,
-      role_id,
-      address,
-    });
-
-    const { password: _, ...userWithoutPassword } = user;
+    const historyEntry = createUserHistoryEntry("CREATE", req.user);
+    const user = await createUserService(
+      {
+        employee_id,
+        first_name,
+        last_name,
+        email,
+        phone,
+        password: hashedPassword,
+        // Store Aadhaar encrypted; the blind index carries uniqueness.
+        aadhaar_number: encrypt(aadhaar_number),
+        aadhaar_hash: blindIndex(aadhaar_number),
+        branch_id,
+        department_id,
+        role_id,
+        address,
+      },
+      historyEntry,
+    );
 
     logAuthEvent("user_created", {
       user_id: user.id,
@@ -115,7 +123,11 @@ export const createUser = async (req, res) => {
       success: true,
     });
 
-    return res.status(201).json({ success: true, data: userWithoutPassword });
+    return res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: formatUserResponse(user),
+    });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);

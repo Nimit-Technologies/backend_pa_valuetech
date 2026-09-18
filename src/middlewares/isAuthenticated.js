@@ -18,10 +18,6 @@ export const isAuthenticated = async (req, res, next) => {
       algorithms: ["HS256"],
     });
 
-    // The JWT payload is only proof of *who* logged in and *when* — it can't
-    // reflect anything that happened to the account afterward. Re-check
-    // current DB state on every request so a deactivation/soft-delete takes
-    // effect immediately instead of waiting out the token's TTL.
     const currentUser = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { is_active: true, deleted_at: true, token_version: true },
@@ -36,10 +32,6 @@ export const isAuthenticated = async (req, res, next) => {
       });
     }
 
-    // token_version is bumped on logout and on any admin change to this
-    // user (role/branch/department/status/password). A mismatch means this
-    // token predates that change — its signature and exp are still valid,
-    // but it must not be honored any more.
     if (currentUser.token_version !== decoded.token_version) {
       res.clearCookie("token", COOKIE_OPTIONS);
       return res.status(401).json({

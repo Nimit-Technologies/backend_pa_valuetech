@@ -10,32 +10,14 @@ import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import { encrypt, blindIndex } from "../../../utils/encryption.js";
 import bcrypt from "bcrypt";
 import { CREDENTIALS } from "../../../constant/credentials.js";
-
-// True if `data` (only the keys the caller actually sent, since
-// updateUserSchema fields are all optional) would change anything on
-// `existing`. getUserById selects branch/department/role as nested relation
-// objects rather than flat *_id scalars, so those three compare against
-// `.id`. A password is never compared to the stored hash — its mere
-// presence means the caller intends to change it. Keeps a no-op PUT from
-// hitting the DB or re-triggering downstream effects (updated_at bump,
-// token_version bump/session invalidation, audit log, etc.).
-const hasChanges = (existing, data) =>
-  Object.entries(data).some(([key, value]) => {
-    if (key === "password") return true;
-    if (key === "confirm_password") return false;
-    if (key === "address") {
-      if (!value || typeof value !== "object") return false;
-      return Object.entries(value).some(
-        ([addrKey, addrValue]) => existing.address?.[addrKey] !== addrValue,
-      );
-    }
-    if (key === "branch_id") return existing.branch?.id !== value;
-    if (key === "department_id") return existing.department?.id !== value;
-    if (key === "role_id") return existing.role?.id !== value;
-    return existing[key] !== value;
-  });
+import {
+  createUserHistoryEntry,
+  formatUserResponse,
+} from "../utils/user-history.js";
+import { hasChanges } from "../utils/user-has-changes.js";
 
 export const updateUser = async (req, res, next) => {
   try {
@@ -109,9 +91,18 @@ export const updateUser = async (req, res, next) => {
           .json({ success: false, message: "Passwords do not match" });
       }
       updateData.password = await bcrypt.hash(
-        password,
+        password + CREDENTIALS.PEPPER_SECRET,
         CREDENTIALS.SALT_ROUNDS,
       );
+    }
+
+    // Store Aadhaar encrypted, with the blind index carrying uniqueness —
+    // same treatment as create.user.js. Compute the hash from the plaintext
+    // before it's replaced with ciphertext. A collision with another user's
+    // Aadhaar surfaces as P2002 on aadhaar_hash in the catch block below.
+    if (updateData.aadhaar_number !== undefined) {
+      updateData.aadhaar_hash = blindIndex(updateData.aadhaar_number);
+      updateData.aadhaar_number = encrypt(updateData.aadhaar_number);
     }
 
     const [branch, department, role] = await Promise.all([
@@ -145,12 +136,18 @@ export const updateUser = async (req, res, next) => {
     )
       return;
 
-    const user = await updateUserService(id, {
-      ...updateData,
-      branch_id,
-      department_id,
-      role_id,
-    });
+    const historyEntry = createUserHistoryEntry("UPDATE", req.user);
+    const user = await updateUserService(
+      id,
+      {
+        ...updateData,
+        branch_id,
+        department_id,
+        role_id,
+      },
+      historyEntry,
+      existing,
+    );
 
     logAuthEvent("user_updated", {
       user_id: id,
@@ -159,7 +156,11 @@ export const updateUser = async (req, res, next) => {
       success: true,
     });
 
-    res.json({ success: true, data: user });
+    res.json({
+      success: true,
+      message: "User updated successfully",
+      data: formatUserResponse(user),
+    });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);

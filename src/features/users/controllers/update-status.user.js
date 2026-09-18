@@ -2,6 +2,10 @@ import { getUserById } from "../services/service.getById.user.js";
 import { setUserStatus } from "../services/service.updateStatus.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createUserHistoryEntry,
+  formatUserResponse,
+} from "../utils/user-history.js";
 
 export const updateUserStatus = async (req, res, next) => {
   try {
@@ -35,7 +39,11 @@ export const updateUserStatus = async (req, res, next) => {
     }
 
     const is_active = !existing.is_active;
-    const user = await setUserStatus(id, is_active);
+    const historyEntry = createUserHistoryEntry(
+      is_active ? "ACTIVATE" : "DEACTIVATE",
+      req.user,
+    );
+    const user = await setUserStatus(id, is_active, historyEntry, existing);
 
     // isAuthenticated re-checks is_active on every request, so this takes
     // effect on the target user's live session immediately — worth a log
@@ -51,7 +59,7 @@ export const updateUserStatus = async (req, res, next) => {
     res.json({
       success: true,
       message: `User ${is_active ? "activated" : "deactivated"} successfully`,
-      data: user,
+      data: formatUserResponse(user),
     });
   } catch (error) {
     console.error("updateUserStatus error:", error);

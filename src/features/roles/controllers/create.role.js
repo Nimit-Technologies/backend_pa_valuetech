@@ -4,6 +4,10 @@ import { getDepartmentById } from "../../departments/services/service.getById.de
 import { roleSchema } from "../role.schema.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createRoleHistoryEntry,
+  formatRoleResponse,
+} from "../utils/role-history.js";
 
 export const createRole = async (req, res) => {
   try {
@@ -14,7 +18,7 @@ export const createRole = async (req, res) => {
         .json({ success: false, errors: parsed.error.issues });
     }
 
-    const { name, department_id } = parsed.data;
+    const { name, department_id, branch_id: bodyBranchId } = parsed.data;
 
     const department = await getDepartmentById(department_id);
     if (
@@ -25,6 +29,8 @@ export const createRole = async (req, res) => {
     )
       return;
 
+    const branch_id = bodyBranchId || department.branch_id;
+
     const existing = await findRoleByName(name, department_id);
     if (existing) {
       return res.status(409).json({
@@ -33,15 +39,32 @@ export const createRole = async (req, res) => {
       });
     }
 
-    const role = await createRoleService(name, department_id);
+    const historyEntry = createRoleHistoryEntry("CREATE", req.user);
+    const role = await createRoleService(
+      name,
+      department_id,
+      branch_id,
+      historyEntry,
+    );
+
     logAuthEvent("role_created", {
       role_id: role.id,
+      branch_id,
+      department_id,
       actor_id: req.user?.id ?? null,
       ip: req.ip,
       success: true,
     });
-    res.status(201).json({ success: true, data: role });
+    res.status(201).json({ success: true, data: formatRoleResponse(role) });
   } catch (error) {
+    // Unique (name, department_id) index — a concurrent create slipped past
+    // the findRoleByName check above.
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+        message: "Role already exists in this department",
+      });
+    }
     console.error("createRole error:", error);
     res.status(500).json({ success: false, message: "Failed to create role" });
   }

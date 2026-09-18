@@ -2,6 +2,10 @@ import { getRoleById } from "../services/service.getById.role.js";
 import { setRoleStatus } from "../services/service.updateStatus.role.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createRoleHistoryEntry,
+  formatRoleResponse,
+} from "../utils/role-history.js";
 
 export const updateRoleStatus = async (req, res, next) => {
   try {
@@ -35,7 +39,11 @@ export const updateRoleStatus = async (req, res, next) => {
     }
 
     const is_active = !existing.is_active;
-    const role = await setRoleStatus(id, is_active);
+    const historyEntry = createRoleHistoryEntry(
+      is_active ? "ACTIVATE" : "DEACTIVATE",
+      req.user,
+    );
+    const role = await setRoleStatus(id, is_active, historyEntry, existing);
 
     logAuthEvent(is_active ? "role_activated" : "role_deactivated", {
       role_id: id,
@@ -47,7 +55,7 @@ export const updateRoleStatus = async (req, res, next) => {
     res.json({
       success: true,
       message: `Role ${is_active ? "activated" : "deactivated"} successfully`,
-      data: role,
+      data: formatRoleResponse(role),
     });
   } catch (error) {
     console.error("updateRoleStatus error:", error);

@@ -17,12 +17,6 @@ const deny = (res) =>
     message: "Access denied. You are not authorized.",
   });
 
-// role.schema.js / department.schema.js already trim+lowercase `name` on
-// create/update, so req.user.role.name should already be normalized by the
-// time it's embedded in the JWT. Normalizing again here is just cheap
-// insurance against a row ever reaching the DB outside that Zod schema
-// (a seed script, a raw migration) — it can only make a match more
-// permissive, never break one that already works.
 const normalize = (value) => value?.trim().toLowerCase();
 
 const hasRole = (req, ...roles) =>
@@ -31,9 +25,6 @@ const hasRole = (req, ...roles) =>
 const hasDepartment = (req, department) =>
   normalize(req.user?.department?.name) === department;
 
-// Pure predicate (no res/next) for controllers that need to branch their own
-// query/write scope on role — e.g. restricting a branch-admin to records in
-// their own branch — without duplicating the role-normalization logic above.
 export const isSuperAdminRole = (req) => hasRole(req, ROLE.SUPER_ADMIN);
 
 export const isSuperAdmin = (req, res, next) => {

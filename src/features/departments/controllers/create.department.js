@@ -4,6 +4,10 @@ import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { departmentSchema } from "../department.schema.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createDepartmentHistoryEntry,
+  formatDepartmentResponse,
+} from "../utils/department-history.js";
 
 export const createDepartment = async (req, res) => {
   try {
@@ -33,7 +37,12 @@ export const createDepartment = async (req, res) => {
       });
     }
 
-    const department = await createDepartmentService(name, branch_id);
+    const historyEntry = createDepartmentHistoryEntry("CREATE", req.user);
+    const department = await createDepartmentService(
+      name,
+      branch_id,
+      historyEntry,
+    );
 
     logAuthEvent("department_created", {
       department_id: department.id,
@@ -43,8 +52,17 @@ export const createDepartment = async (req, res) => {
       success: true,
     });
 
-    res.status(201).json({ success: true, data: department });
+    res.status(201).json({
+      success: true,
+      message: "Department created successfully",
+      data: formatDepartmentResponse(department),
+    });
   } catch (error) {
+    if (error?.code === "P2002") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Department already exists" });
+    }
     console.error("createDepartment error:", error);
     res
       .status(500)

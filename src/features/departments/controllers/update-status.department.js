@@ -2,6 +2,10 @@ import { getDepartmentById } from "../services/service.getById.department.js";
 import { setDepartmentStatus } from "../services/service.updateStatus.department.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createDepartmentHistoryEntry,
+  formatDepartmentResponse,
+} from "../utils/department-history.js";
 
 export const updateDepartmentStatus = async (req, res, next) => {
   try {
@@ -36,7 +40,16 @@ export const updateDepartmentStatus = async (req, res, next) => {
     }
 
     const is_active = !existing.is_active;
-    const department = await setDepartmentStatus(id, is_active);
+    const historyEntry = createDepartmentHistoryEntry(
+      is_active ? "ACTIVATE" : "DEACTIVATE",
+      req.user,
+    );
+    const department = await setDepartmentStatus(
+      id,
+      is_active,
+      historyEntry,
+      existing,
+    );
 
     logAuthEvent(
       is_active ? "department_activated" : "department_deactivated",
@@ -51,7 +64,7 @@ export const updateDepartmentStatus = async (req, res, next) => {
     res.json({
       success: true,
       message: `Department ${is_active ? "activated" : "deactivated"} successfully`,
-      data: department,
+      data: formatDepartmentResponse(department),
     });
   } catch (error) {
     console.error("updateDepartmentStatus error:", error);

@@ -25,4 +25,10 @@ export const CREDENTIALS = {
   JWT_EXPIRY: process.env.JWT_EXPIRY,
   PEPPER_SECRET: process.env.PEPPER_SECRET,
   SALT_ROUNDS: parseInt(process.env.SALT_ROUNDS, 10) || 12,
+
+  // PII-at-rest encryption (see src/utils/encryption.js). Both are 32-byte
+  // keys as 64 hex chars; keep them distinct from each other and from
+  // JWT_SECRET / PEPPER_SECRET.
+  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
+  BLIND_INDEX_KEY: process.env.BLIND_INDEX_KEY,
 };

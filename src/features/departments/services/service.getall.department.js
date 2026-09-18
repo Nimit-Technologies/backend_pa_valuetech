@@ -1,14 +1,41 @@
 import { CREDENTIALS } from "../../../constant/credentials.js";
 import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
+import { getDepartmentCounts } from "../utils/department-count.js";
 import { branchSelect } from "./department.service.helpers.js";
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
 
-export const getAllDepartments = async (query) => {
-  const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
-  const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
-  const cursorId = String(query.cursorId || "");
+const DEFAULT_DATA_LIMIT = 10;
+const parsedDataLimit = parseInt(CREDENTIALS.DATA_LIMIT, 10);
+const DATA_LIMIT =
+  Number.isInteger(parsedDataLimit) && parsedDataLimit > 0
+    ? parsedDataLimit
+    : DEFAULT_DATA_LIMIT;
+
+const OMIT_HISTORY = process.env.NODE_ENV !== "development";
+
+const getSearchDepartmentCounts = async (nameFilter) => {
+  const groups = await prisma.department.groupBy({
+    by: ["is_active"],
+    where: { deleted_at: null, name: nameFilter },
+    _count: { _all: true },
+  });
+
+  let total = 0;
+  let active = 0;
+  for (const { is_active, _count } of groups) {
+    total += _count._all;
+    if (is_active) active += _count._all;
+  }
+  return { total, active };
+};
+
+// {{DEPARTMENT_BASE_URL}}/all-department?direction=next&cursorId=""&search=""
+export const getAllDepartments = async (params = {}) => {
+  const direction = String(params.direction || PAGINATION_DIRECTION.NEXT);
+  const cursorId = String(params.cursorId || "");
+  const search = String(params.search ?? "").trim();
 
   if (!VALID_DIRECTIONS.includes(direction)) {
     const error = new Error(
@@ -18,7 +45,7 @@ export const getAllDepartments = async (query) => {
     throw error;
   }
 
-  const filter = { deleted_at: null };
+  const filter = {};
   let orderBy = { id: "asc" };
 
   if (cursorId) {
@@ -29,12 +56,24 @@ export const getAllDepartments = async (query) => {
       orderBy = { id: "desc" };
     }
   }
-  const initialDepartments = await prisma.department.findMany({
-    where: filter,
-    orderBy,
-    take: dataLimit + 1,
-    include: { branch: branchSelect },
-  });
+
+  if (search) {
+    filter.name = { contains: search, mode: "insensitive" };
+  }
+
+  const [initialDepartments, counts] = await Promise.all([
+    prisma.department.findMany({
+      where: filter,
+      orderBy,
+      take: DATA_LIMIT + 1,
+      omit: { history: OMIT_HISTORY },
+      include: { branch: branchSelect },
+    }),
+    search ? getSearchDepartmentCounts(filter.name) : getDepartmentCounts(),
+  ]);
+
+  const totalCount = counts.total;
+  const totalActiveCount = counts.active;
 
   if (!initialDepartments.length) {
     return {
@@ -44,28 +83,30 @@ export const getAllDepartments = async (query) => {
       hasNextPage: false,
       hasPreviousPage: false,
       departmentLength: 0,
-      dataLimit,
+      totalCount,
+      totalActiveCount,
+      dataLimit: DATA_LIMIT,
     };
   }
 
-  const hasMore = initialDepartments.length > dataLimit;
-  if (hasMore) initialDepartments.pop();
+  const hasMore = initialDepartments.length > DATA_LIMIT;
 
-  const finalDepartments =
+  if (hasMore) initialDepartments.pop();
+  const orderedDepartments =
     direction === PAGINATION_DIRECTION.PREVIOUS
       ? initialDepartments.reverse()
       : initialDepartments;
 
   return {
-    departments: finalDepartments,
-    departmentFirstId: finalDepartments[0]?.id,
-    departmentLastId: finalDepartments[finalDepartments.length - 1]?.id,
+    departments: orderedDepartments,
+    departmentFirstId: orderedDepartments[0]?.id,
+    departmentLastId: orderedDepartments[orderedDepartments.length - 1]?.id,
     hasNextPage: direction === PAGINATION_DIRECTION.NEXT ? hasMore : !!cursorId,
-
     hasPreviousPage:
       direction === PAGINATION_DIRECTION.PREVIOUS ? hasMore : !!cursorId,
-
-    departmentLength: finalDepartments.length,
-    dataLimit,
+    departmentLength: orderedDepartments.length,
+    totalCount,
+    totalActiveCount,
+    dataLimit: DATA_LIMIT,
   };
 };

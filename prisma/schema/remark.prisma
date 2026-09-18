@@ -15,7 +15,6 @@ model Remark {
   department Department? @relation(fields: [department_id], references: [id], onDelete: SetNull)
   role       Role?       @relation(fields: [role_id], references: [id], onDelete: SetNull)
 
-  
   first_name      String
   employee_id     String
   branch_name     String

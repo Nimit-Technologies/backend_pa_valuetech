@@ -1,15 +1,15 @@
 model Status {
-    id         String  @id @default(cuid())
-    name       String  @unique
-    is_active  Boolean @default(true)
-    sort_order Int     @default(0)
+  id         String  @id @default(cuid())
+  name       String  @unique
+  is_active  Boolean @default(true)
+  sort_order Int     @default(0)
 
-    allocations Allocation[]
+  allocations Allocation[]
 
-    created_at DateTime  @default(now())
-    updated_at DateTime  @updatedAt
-    deleted_at DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
 
-    @@index([name])
-    @@map("statuses")
+  @@index([name])
+  @@map("statuses")
 }

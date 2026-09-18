@@ -1,8 +1,9 @@
 import { getAllUsers as getAllUsersService } from "../services/service.getall.user.js";
+import { formatUserResponse } from "../utils/user-history.js";
 
 export const getAllUsers = async (req, res) => {
   try {
-    const { direction, cursorId } = req.query;
+    const { direction, cursorId, search } = req.query;
 
     const {
       users,
@@ -12,17 +13,21 @@ export const getAllUsers = async (req, res) => {
       hasPreviousPage,
       userLength,
       dataLimit,
-    } = await getAllUsersService({ direction, cursorId });
+      totalCount,
+      totalActiveCount,
+    } = await getAllUsersService({ direction, cursorId, search });
 
     res.json({
       success: true,
-      data: users,
+      data: formatUserResponse(users),
       userFirstId,
       userLastId,
       hasNextPage,
       hasPreviousPage,
       userLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     });
   } catch (error) {
     console.error("getAllUsers error:", error);

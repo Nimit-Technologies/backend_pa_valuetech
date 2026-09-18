@@ -1,12 +1,14 @@
 model Branch {
-  id String @id @default(cuid())
-
+  id          String       @id @default(cuid())
   name        String       @unique
   is_active   Boolean      @default(true)
   users       User[]
   departments Department[]
+  roles       Role[]
   banks       Bank[]
   remarks     Remark[]
+
+  history     Json         @default("[]")
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

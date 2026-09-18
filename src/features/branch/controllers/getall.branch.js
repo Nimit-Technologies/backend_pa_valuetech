@@ -1,8 +1,9 @@
 import { getAllBranches as getAllBranchesService } from "../services/service.getall.branch.js";
+import { formatBranchResponse } from "../utils/branch-history.js";
 
 export const getAllBranches = async (req, res) => {
   try {
-    const { direction, cursorId } = req.query;
+    const { direction, cursorId, search } = req.query;
 
     const {
       branches,
@@ -12,17 +13,21 @@ export const getAllBranches = async (req, res) => {
       hasPreviousPage,
       branchLength,
       dataLimit,
-    } = await getAllBranchesService({ direction, cursorId });
+      totalCount,
+      totalActiveCount,
+    } = await getAllBranchesService({ direction, cursorId, search });
 
     res.json({
       success: true,
-      data: branches,
+      data: formatBranchResponse(branches),
       branchFirstId,
       branchLastId,
       hasNextPage,
       hasPreviousPage,
       branchLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     });
   } catch (error) {
     console.error("getAllBranches error:", error);

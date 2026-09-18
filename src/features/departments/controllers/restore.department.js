@@ -4,6 +4,10 @@ import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createDepartmentHistoryEntry,
+  formatDepartmentResponse,
+} from "../utils/department-history.js";
 
 export const restoreDepartment = async (req, res, next) => {
   try {
@@ -44,7 +48,12 @@ export const restoreDepartment = async (req, res, next) => {
     )
       return;
 
-    const department = await restoreDepartmentService(id);
+    const historyEntry = createDepartmentHistoryEntry("RESTORE", req.user);
+    const department = await restoreDepartmentService(
+      id,
+      historyEntry,
+      existing,
+    );
 
     logAuthEvent("department_restored", {
       department_id: id,
@@ -56,7 +65,7 @@ export const restoreDepartment = async (req, res, next) => {
     res.json({
       success: true,
       message: "Department restored successfully",
-      data: department,
+      data: formatDepartmentResponse(department),
     });
   } catch (error) {
     console.error("restoreDepartment error:", error);

@@ -5,7 +5,7 @@ model Allocation {
   user_id String
   role_id String
 
-  status_id String
+  status_id        String
   business_type_id String
 
   allocated_by_id String
@@ -14,10 +14,10 @@ model Allocation {
   // Do not rely on allocated_at for ordering — it's ambiguous under same-millisecond inserts.
   sequence Int
 
-  case   Case   @relation(fields: [case_id], references: [id], onDelete: Restrict)
-  user   User   @relation("AllocationUser", fields: [user_id], references: [id], onDelete: Restrict)
-  role   Role   @relation(fields: [role_id], references: [id], onDelete: Restrict)
-  status Status @relation(fields: [status_id], references: [id], onDelete: Restrict)
+  case          Case         @relation(fields: [case_id], references: [id], onDelete: Restrict)
+  user          User         @relation("AllocationUser", fields: [user_id], references: [id], onDelete: Restrict)
+  role          Role         @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  status        Status       @relation(fields: [status_id], references: [id], onDelete: Restrict)
   business_type BusinessType @relation(fields: [business_type_id], references: [id], onDelete: Restrict)
 
   allocated_by User @relation("AllocationAllocatedBy", fields: [allocated_by_id], references: [id], onDelete: Restrict)

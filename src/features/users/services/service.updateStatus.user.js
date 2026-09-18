@@ -1,14 +1,24 @@
 import prisma from "../../../prisma/client.js";
+import { recordUserTransition } from "../utils/user-count.js";
 
 const relationSelect = { select: { id: true, name: true } };
 
-export const setUserStatus = (id, is_active) => {
-  return prisma.user.update({
+export const setUserStatus = async (id, is_active, historyEntry, existing) => {
+  const currentHistory = Array.isArray(existing?.history)
+    ? existing.history
+    : [];
+  const updatedHistory = historyEntry
+    ? [...currentHistory, historyEntry]
+    : currentHistory;
+
+  const user = await prisma.user.update({
     where: { id },
-    // Deactivation is already caught live by isAuthenticated's is_active
-    // check, but bump token_version here too so re-activation doesn't let a
-    // token issued before the deactivation quietly start working again.
-    data: { is_active, token_version: { increment: 1 } },
+
+    data: {
+      is_active,
+      history: updatedHistory,
+      token_version: { increment: 1 },
+    },
     select: {
       id: true,
       employee_id: true,
@@ -18,6 +28,7 @@ export const setUserStatus = (id, is_active) => {
       phone: true,
       aadhaar_number: true,
       is_active: true,
+      history: true,
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,
@@ -27,4 +38,7 @@ export const setUserStatus = (id, is_active) => {
       deleted_at: true,
     },
   });
+
+  recordUserTransition(existing, user);
+  return user;
 };
