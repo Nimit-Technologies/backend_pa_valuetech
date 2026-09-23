@@ -1,5 +1,6 @@
 import { getAllBanks as getAllBanksService } from "../services/service.getall.bank.js";
 import { resolveBranchScope } from "../../../utils/branch-scope.js";
+import { formatBankResponse } from "../utils/bank-history.js";
 
 export const getAllBanks = async (req, res) => {
   try {
@@ -13,16 +14,20 @@ export const getAllBanks = async (req, res) => {
       hasPreviousPage,
       bankLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     } = await getAllBanksService({ direction, cursorId, branchId });
     res.json({
       success: true,
-      data: banks,
+      data: formatBankResponse(banks),
       bankFirstId,
       bankLastId,
       hasNextPage,
       hasPreviousPage,
       bankLength,
       dataLimit,
+      totalCount,
+      totalActiveCount,
     });
   } catch (error) {
     console.error("getAllBanks error:", error);

@@ -1,9 +1,6 @@
 model Case {
   id String @id @default(cuid())
 
-  // Not @@unique: uniqueness of [file_number, branch_id] is enforced only among
-  // non-deleted rows via a partial unique index (see migration SQL), so a
-  // soft-deleted case's file_number can be reused within the same branch.
   file_number             String
   banker_name             String
   customer_name           String

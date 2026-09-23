@@ -1,5 +1,7 @@
 import { getBankById } from "../services/service.getById.bank.js";
 import { findBankByName } from "../services/service.findByName.bank.js";
+import { findBankByBranchCode } from "../services/service.findByBranchCode.bank.js";
+import { findBankByGstNumber } from "../services/service.findByGstNumber.bank.js";
 import { updateBank as updateBankService } from "../services/service.update.bank.js";
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { updateBankSchema } from "../bank.schema.js";
@@ -9,6 +11,11 @@ import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createBankHistoryEntry,
+  formatBankResponse,
+} from "../utils/bank-history.js";
+import { SCOPED_DUPLICATE_MESSAGES } from "../utils/bank-duplicate-messages.js";
 
 // True if `data` (only the keys the caller actually sent, since
 // updateBankSchema fields are all optional) would change anything on
@@ -55,15 +62,12 @@ export const updateBank = async (req, res, next) => {
       });
     }
 
-    const existing = await getBankById(id);
-    if (!existing) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Bank not found" });
-    }
-
+    // Resolved before the DB call so a branch-scoped caller's branch_id is
+    // filtered in the query itself, instead of fetching the bank first and
+    // discarding it after if it belongs to another branch.
     const scope = resolveBranchScope(req);
-    if (scope && existing.branch_id !== scope) {
+    const existing = await getBankById(id, scope);
+    if (!existing) {
       return res
         .status(404)
         .json({ success: false, message: "Bank not found" });
@@ -80,9 +84,17 @@ export const updateBank = async (req, res, next) => {
       return res.json({ success: true, message: "No changes are found" });
     }
 
-    const { name, branch_id } = parsed.data;
+    const { name, bank_branch_code, gst_number, branch_id } = parsed.data;
+    const noNameChange = name === undefined || name === existing.name;
+    const noBranchCodeChange =
+      bank_branch_code === undefined ||
+      bank_branch_code === existing.bank_branch_code;
+    const noGstChange =
+      gst_number === undefined || gst_number === existing.gst_number;
+    const noBranchChange =
+      branch_id === undefined || branch_id === existing.branch_id;
 
-    if (branch_id) {
+    if (!noBranchChange) {
       if (scope && branch_id !== scope) {
         return res.status(403).json({
           success: false,
@@ -99,29 +111,76 @@ export const updateBank = async (req, res, next) => {
         return;
     }
 
-    if (name) {
-      const duplicate = await findBankByName(name);
+    // name, bank_branch_code and gst_number are each unique per branch, so
+    // re-check whenever any of them OR the branch changes, against the
+    // values the row will end up with.
+    const targetBranchId = noBranchChange ? existing.branch_id : branch_id;
+
+    if (!noNameChange || !noBranchChange) {
+      const targetName = noNameChange ? existing.name : name;
+      const duplicate = await findBankByName(targetName, targetBranchId);
       if (duplicate && duplicate.id !== id) {
         return res.status(409).json({
           success: false,
-          message: "Bank with this name already exists",
+          message: SCOPED_DUPLICATE_MESSAGES.name,
         });
       }
     }
 
-    const bank = await updateBankService(id, parsed.data);
+    if (!noBranchCodeChange || !noBranchChange) {
+      const targetBranchCode = noBranchCodeChange
+        ? existing.bank_branch_code
+        : bank_branch_code;
+      const duplicate = await findBankByBranchCode(
+        targetBranchCode,
+        targetBranchId,
+      );
+      if (duplicate && duplicate.id !== id) {
+        return res.status(409).json({
+          success: false,
+          message: SCOPED_DUPLICATE_MESSAGES.bank_branch_code,
+        });
+      }
+    }
+
+    if (!noGstChange || !noBranchChange) {
+      const targetGst = noGstChange ? existing.gst_number : gst_number;
+      const duplicate = await findBankByGstNumber(targetGst, targetBranchId);
+      if (duplicate && duplicate.id !== id) {
+        return res.status(409).json({
+          success: false,
+          message: SCOPED_DUPLICATE_MESSAGES.gst_number,
+        });
+      }
+    }
+
+    const historyEntry = createBankHistoryEntry("UPDATE", req.user);
+    const bank = await updateBankService(
+      id,
+      parsed.data,
+      historyEntry,
+      existing,
+    );
 
     logAuthEvent("bank_updated", {
       bank_id: id,
       actor_id: req.user?.id ?? null,
       ip: req.ip,
       success: true,
+      ...(noBranchChange
+        ? {}
+        : { from_branch_id: existing.branch_id, to_branch_id: branch_id }),
     });
 
-    res.json({ success: true, data: bank });
+    res.json({ success: true, data: formatBankResponse(bank) });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);
+      const scopedMessage = SCOPED_DUPLICATE_MESSAGES[field];
+      if (scopedMessage) {
+        console.error(`updateBank error: ${scopedMessage}`);
+        return res.status(409).json({ success: false, message: scopedMessage });
+      }
       console.error(
         `updateBank error: bank with this ${UNIQUE_FIELD_LABELS[field] ?? field} already exists`,
       );

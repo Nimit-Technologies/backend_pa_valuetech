@@ -1,5 +1,6 @@
 import { getRoleById as getRoleByIdService } from "../services/service.getById.role.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { formatRoleResponse } from "../utils/role-history.js";
 
 export const getRoleById = async (req, res, next) => {
@@ -18,7 +19,12 @@ export const getRoleById = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Id is not valid" });
     }
-    const role = await getRoleByIdService(id);
+
+    // Resolved before the DB call: a non-super-admin only ever sees roles
+    // in their own branch, so the branch filter is applied in the query
+    // itself rather than fetched-then-checked.
+    const scope = resolveBranchScope(req);
+    const role = await getRoleByIdService(id, scope);
 
     if (!role) {
       return res

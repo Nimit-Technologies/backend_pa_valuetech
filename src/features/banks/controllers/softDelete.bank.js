@@ -3,6 +3,11 @@ import { softDeleteBank as softDeleteBankService } from "../services/service.sof
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createBankHistoryEntry,
+  formatBankResponse,
+} from "../utils/bank-history.js";
+
 export const softDeleteBank = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -19,15 +24,12 @@ export const softDeleteBank = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Id is not valid" });
     }
-    const existing = await getBankById(id);
-    if (!existing) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Bank not found" });
-    }
-
+    // Resolved before the DB call so a branch-scoped caller's branch_id is
+    // filtered in the query itself, instead of fetching the bank first and
+    // discarding it after if it belongs to another branch.
     const scope = resolveBranchScope(req);
-    if (scope && existing.branch_id !== scope) {
+    const existing = await getBankById(id, scope);
+    if (!existing) {
       return res
         .status(404)
         .json({ success: false, message: "Bank not found" });
@@ -39,7 +41,8 @@ export const softDeleteBank = async (req, res, next) => {
         .json({ success: false, message: "Bank is already deleted" });
     }
 
-    const bank = await softDeleteBankService(id);
+    const historyEntry = createBankHistoryEntry("SOFT_DELETE", req.user);
+    const bank = await softDeleteBankService(id, historyEntry, existing);
 
     logAuthEvent("bank_soft_deleted", {
       bank_id: id,
@@ -51,7 +54,7 @@ export const softDeleteBank = async (req, res, next) => {
     res.json({
       success: true,
       message: "Bank soft-deleted successfully",
-      data: bank,
+      data: formatBankResponse(bank),
     });
   } catch (error) {
     console.error("softDeleteBank error:", error);

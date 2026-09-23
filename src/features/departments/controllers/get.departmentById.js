@@ -1,5 +1,6 @@
 import { getDepartmentById as getDepartmentByIdService } from "../services/service.getById.department.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { formatDepartmentResponse } from "../utils/department-history.js";
 
 export const getDepartmentById = async (req, res, next) => {
@@ -18,7 +19,12 @@ export const getDepartmentById = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Id is not valid" });
     }
-    const department = await getDepartmentByIdService(id);
+
+    // Resolved before the DB call: a non-super-admin only ever sees
+    // departments in their own branch, so the branch filter is applied in
+    // the query itself rather than fetched-then-checked.
+    const scope = resolveBranchScope(req);
+    const department = await getDepartmentByIdService(id, scope);
 
     if (!department) {
       return res

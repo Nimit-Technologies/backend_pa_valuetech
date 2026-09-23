@@ -1,5 +1,6 @@
 import { getUserById as getUserByIdService } from "../services/service.getById.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { formatUserResponse } from "../utils/user-history.js";
 
 export const getUserById = async (req, res, next) => {
@@ -15,7 +16,12 @@ export const getUserById = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Id is not valid" });
     }
-    const user = await getUserByIdService(id);
+
+    // Resolved before the DB call: a non-super-admin only ever sees users
+    // in their own branch, so the branch filter is applied in the query
+    // itself rather than fetched-then-checked.
+    const scope = resolveBranchScope(req);
+    const user = await getUserByIdService(id, scope);
 
     if (!user) {
       return res

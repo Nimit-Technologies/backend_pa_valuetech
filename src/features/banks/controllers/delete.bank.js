@@ -19,15 +19,12 @@ export const deleteBank = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Id is not valid" });
     }
-    const existing = await getBankById(id);
-    if (!existing) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Bank not found" });
-    }
-
+    // Resolved before the DB call so a branch-scoped caller's branch_id is
+    // filtered in the query itself, instead of fetching the bank first and
+    // discarding it after if it belongs to another branch.
     const scope = resolveBranchScope(req);
-    if (scope && existing.branch_id !== scope) {
+    const existing = await getBankById(id, scope);
+    if (!existing) {
       return res
         .status(404)
         .json({ success: false, message: "Bank not found" });

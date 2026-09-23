@@ -30,13 +30,16 @@ export const updateOwnProfile = async (req, res) => {
     const userId = req.user.id;
     const existing = await getUserById(userId);
     if (!existing) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     if (existing.deleted_at) {
       return res.status(409).json({
         success: false,
-        message: "Account is no longer active. Please contact your administrator.",
+        message:
+          "Account is no longer active. Please contact your administrator.",
       });
     }
 

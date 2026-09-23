@@ -10,10 +10,17 @@ import { getRoleCounts } from "../utils/role-count.js";
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
 
-const getSearchRoleCounts = async (nameFilter) => {
+// Used instead of the cached getRoleCounts() whenever the list is filtered
+// by search and/or branch: the cache tracks the global total, which would
+// be wrong for a search result or for a branch-scoped caller.
+const getScopedRoleCounts = async ({ branchId, nameFilter } = {}) => {
+  const where = { deleted_at: null };
+  if (branchId) where.branch_id = branchId;
+  if (nameFilter) where.name = nameFilter;
+
   const groups = await prisma.role.groupBy({
     by: ["is_active"],
-    where: { deleted_at: null, name: nameFilter },
+    where,
     _count: { _all: true },
   });
 
@@ -31,6 +38,8 @@ export const getAllRoles = async (query) => {
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
   const search = String(query.search ?? "").trim();
+  // A non-super-admin only ever sees roles in their own branch.
+  const branchId = query.branchId;
 
   if (!VALID_DIRECTIONS.includes(direction)) {
     const error = new Error(
@@ -41,6 +50,7 @@ export const getAllRoles = async (query) => {
   }
 
   const filter = { deleted_at: null };
+  if (branchId) filter.branch_id = branchId;
   let orderBy = { id: "asc" };
 
   if (cursorId) {
@@ -66,7 +76,9 @@ export const getAllRoles = async (query) => {
         branch: branchSelect,
       },
     }),
-    search ? getSearchRoleCounts(filter.name) : getRoleCounts(),
+    search || branchId
+      ? getScopedRoleCounts({ branchId, nameFilter: filter.name })
+      : getRoleCounts(),
   ]);
 
   const totalCount = counts.total;

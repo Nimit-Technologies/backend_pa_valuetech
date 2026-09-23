@@ -1,9 +1,12 @@
 import { getAllUsers as getAllUsersService } from "../services/service.getall.user.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { formatUserResponse } from "../utils/user-history.js";
 
 export const getAllUsers = async (req, res) => {
   try {
     const { direction, cursorId, search } = req.query;
+    // A non-super-admin only ever sees users in their own branch.
+    const branchId = resolveBranchScope(req);
 
     const {
       users,
@@ -15,7 +18,7 @@ export const getAllUsers = async (req, res) => {
       dataLimit,
       totalCount,
       totalActiveCount,
-    } = await getAllUsersService({ direction, cursorId, search });
+    } = await getAllUsersService({ direction, cursorId, search, branchId });
 
     res.json({
       success: true,

@@ -1,14 +1,14 @@
 export const ROLE = {
-  SUPER_ADMIN: "super-admin",
-  BRANCH_ADMIN: "branch-admin",
-  COORDINATOR: "coordinator",
+  SUPER_ADMIN: "super admin",
+  BRANCH_ADMIN: "branch admin",
+  CORDINATOR: "cordinator",
 };
 
 const DEPARTMENT = {
-  COORDINATION: "coordination",
+  CORDINATION: "cordination",
   MANAGEMENT: "management",
   TECHNICAL: "engineer",
-  BACK_OFFICE: "back-office",
+  BACK_OFFICE: "back office",
 };
 
 const deny = (res) =>
@@ -43,12 +43,15 @@ export const isBranchAdmin = (req, res, next) => {
 };
 
 // Coordinator must have role "coordinator" AND belong to "coordination" department
+const isCoordinatorUser = (req) =>
+  hasRole(req, ROLE.CORDINATOR) && hasDepartment(req, DEPARTMENT.CORDINATION);
+
 export const isCoordinator = (req, res, next) => {
-  if (
-    hasRole(req, ROLE.COORDINATOR) &&
-    hasDepartment(req, DEPARTMENT.COORDINATION)
-  ) {
-    return next();
-  }
+  if (isCoordinatorUser(req)) return next();
+  return deny(res);
+};
+
+export const isBranchAdminOrCoordinator = (req, res, next) => {
+  if (hasRole(req, ROLE.BRANCH_ADMIN) || isCoordinatorUser(req)) return next();
   return deny(res);
 };

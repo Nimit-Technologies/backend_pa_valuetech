@@ -1,26 +1,35 @@
 model Bank {
-  id           String  @id @default(cuid())
-  name         String  @unique
-  display_name String
-  gst_number   String  @unique
-  branch_code  String  @unique
-  is_active    Boolean @default(true)
-  branch_id    String
-  branch       Branch  @relation(fields: [branch_id], references: [id], onDelete: Restrict)
-  address_id   String  @unique
-  address      Address @relation(fields: [address_id], references: [id], onDelete: Restrict)
+  id String @id @default(cuid())
+  // name, bank_branch_code and gst_number are each unique per branch, not
+  // globally: the same bank/branch-code/GST number may exist under a
+  // different branch, just not twice within the same one. See @@unique
+  // below.
+  name             String
+  display_name     String
+  bank_branch      String
+  bank_branch_code String
+  gst_number       String
+  is_active        Boolean @default(true)
+  branch_id        String
+
+  branch     Branch  @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  address_id String  @unique
+  address    Address @relation(fields: [address_id], references: [id], onDelete: Restrict)
 
   cases Case[]
 
-  cases Case[]
-
+  history    Json      @default("[]")
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
+  // Names/codes/GST numbers are normalized (lowercased/uppercased) by the
+  // zod schema before they are written, so these behave case-insensitively.
+  // Each composite index also serves lookups on its leading column alone,
+  // so no separate single-column index is needed for any of them.
+  @@unique([name, branch_id])
+  @@unique([bank_branch_code, branch_id])
+  @@unique([gst_number, branch_id])
   @@index([branch_id])
-  @@index([name])
-  @@index([gst_number])
-  @@index([branch_code])
   @@map("banks")
 }

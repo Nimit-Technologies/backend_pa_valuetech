@@ -15,10 +15,17 @@ const DATA_LIMIT =
 
 const OMIT_HISTORY = process.env.NODE_ENV !== "development";
 
-const getSearchDepartmentCounts = async (nameFilter) => {
+// Used instead of the cached getDepartmentCounts() whenever the list is
+// filtered by search and/or branch: the cache tracks the global total,
+// which would be wrong for a search result or for a branch-scoped caller.
+const getScopedDepartmentCounts = async ({ branchId, nameFilter } = {}) => {
+  const where = { deleted_at: null };
+  if (branchId) where.branch_id = branchId;
+  if (nameFilter) where.name = nameFilter;
+
   const groups = await prisma.department.groupBy({
     by: ["is_active"],
-    where: { deleted_at: null, name: nameFilter },
+    where,
     _count: { _all: true },
   });
 
@@ -36,6 +43,8 @@ export const getAllDepartments = async (params = {}) => {
   const direction = String(params.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(params.cursorId || "");
   const search = String(params.search ?? "").trim();
+  // A non-super-admin only ever sees departments in their own branch.
+  const branchId = params.branchId;
 
   if (!VALID_DIRECTIONS.includes(direction)) {
     const error = new Error(
@@ -46,6 +55,7 @@ export const getAllDepartments = async (params = {}) => {
   }
 
   const filter = {};
+  if (branchId) filter.branch_id = branchId;
   let orderBy = { id: "asc" };
 
   if (cursorId) {
@@ -69,7 +79,9 @@ export const getAllDepartments = async (params = {}) => {
       omit: { history: OMIT_HISTORY },
       include: { branch: branchSelect },
     }),
-    search ? getSearchDepartmentCounts(filter.name) : getDepartmentCounts(),
+    search || branchId
+      ? getScopedDepartmentCounts({ branchId, nameFilter: filter.name })
+      : getDepartmentCounts(),
   ]);
 
   const totalCount = counts.total;

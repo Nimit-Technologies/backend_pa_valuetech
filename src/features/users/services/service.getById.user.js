@@ -2,9 +2,15 @@ import prisma from "../../../prisma/client.js";
 
 const relationSelect = { select: { id: true, name: true } };
 
-export const getUserById = (id) => {
-  return prisma.user.findUnique({
-    where: { id },
+// branch_id is optional: pass it to let the DB itself reject a user that
+// exists but is outside the caller's branch, instead of fetching it and
+// checking after.
+export const getUserById = (id, branch_id) => {
+  return prisma.user.findFirst({
+    where: {
+      id,
+      ...(branch_id && { branch_id }),
+    },
     select: {
       id: true,
       employee_id: true,

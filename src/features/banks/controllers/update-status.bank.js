@@ -3,6 +3,11 @@ import { setBankStatus } from "../services/service.updateStatus.bank.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { resolveBranchScope } from "../../../utils/branch-scope.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import {
+  createBankHistoryEntry,
+  formatBankResponse,
+} from "../utils/bank-history.js";
+
 export const updateBankStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -19,15 +24,12 @@ export const updateBankStatus = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Id is not valid" });
     }
-    const existing = await getBankById(id);
-    if (!existing) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Bank not found" });
-    }
-
+    // Resolved before the DB call so a branch-scoped caller's branch_id is
+    // filtered in the query itself, instead of fetching the bank first and
+    // discarding it after if it belongs to another branch.
     const scope = resolveBranchScope(req);
-    if (scope && existing.branch_id !== scope) {
+    const existing = await getBankById(id, scope);
+    if (!existing) {
       return res
         .status(404)
         .json({ success: false, message: "Bank not found" });
@@ -41,7 +43,11 @@ export const updateBankStatus = async (req, res, next) => {
     }
 
     const is_active = !existing.is_active;
-    const bank = await setBankStatus(id, is_active);
+    const historyEntry = createBankHistoryEntry(
+      is_active ? "ACTIVATE" : "DEACTIVATE",
+      req.user,
+    );
+    const bank = await setBankStatus(id, is_active, historyEntry, existing);
 
     logAuthEvent(is_active ? "bank_activated" : "bank_deactivated", {
       bank_id: id,
@@ -53,7 +59,7 @@ export const updateBankStatus = async (req, res, next) => {
     res.json({
       success: true,
       message: `Bank ${is_active ? "activated" : "deactivated"} successfully`,
-      data: bank,
+      data: formatBankResponse(bank),
     });
   } catch (error) {
     console.error("updateBankStatus error:", error);

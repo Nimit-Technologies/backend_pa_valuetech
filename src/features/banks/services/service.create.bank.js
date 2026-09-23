@@ -1,23 +1,35 @@
 import prisma from "../../../prisma/client.js";
+import { branchSelect } from "./bank.service.helpers.js";
+import { recordBankTransition } from "../utils/bank-count.js";
 
-const branchSelect = { select: { id: true, name: true } };
+export const createBank = async (data, historyEntry) => {
+  const {
+    name,
+    display_name,
+    bank_branch,
+    bank_branch_code,
+    gst_number,
+    branch_id,
+    address,
+  } = data;
 
-export const createBank = (data) => {
-  const { name, display_name, gst_number, branch_code, branch_id, address } =
-    data;
-
-  return prisma.bank.create({
+  const bank = await prisma.bank.create({
     data: {
       name,
       display_name,
+      bank_branch,
+      bank_branch_code,
       gst_number,
-      branch_code,
       branch: { connect: { id: branch_id } },
       address: { create: address },
+      history: historyEntry ? [historyEntry] : [],
     },
     include: {
       branch: branchSelect,
       address: true,
     },
   });
+
+  recordBankTransition(null, bank);
+  return bank;
 };

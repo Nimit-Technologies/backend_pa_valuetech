@@ -32,18 +32,24 @@ const DATA_LIMIT =
     ? parsedDataLimit
     : DEFAULT_DATA_LIMIT;
 
-const getSearchUserCounts = async (nameFilter) => {
+// Used instead of the cached getUserCounts() whenever the list is filtered
+// by search and/or branch: the cache tracks the global total, which would
+// be wrong for a search result or for a branch-scoped caller.
+const getScopedUserCounts = async ({ branchId, searchFilter } = {}) => {
+  const where = { deleted_at: null };
+  if (branchId) where.branch_id = branchId;
+  if (searchFilter) {
+    where.OR = [
+      { first_name: searchFilter },
+      { last_name: searchFilter },
+      { employee_id: searchFilter },
+      { email: searchFilter },
+    ];
+  }
+
   const groups = await prisma.user.groupBy({
     by: ["is_active"],
-    where: {
-      deleted_at: null,
-      OR: [
-        { first_name: nameFilter },
-        { last_name: nameFilter },
-        { employee_id: nameFilter },
-        { email: nameFilter },
-      ],
-    },
+    where,
     _count: { _all: true },
   });
 
@@ -61,6 +67,8 @@ export const getAllUsers = async (params = {}) => {
   const direction = String(params.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(params.cursorId || "");
   const search = String(params.search ?? "").trim();
+  // A non-super-admin only ever sees users in their own branch.
+  const branchId = params.branchId;
 
   if (!VALID_DIRECTIONS.includes(direction)) {
     const error = new Error(
@@ -71,6 +79,7 @@ export const getAllUsers = async (params = {}) => {
   }
 
   const filter = {};
+  if (branchId) filter.branch_id = branchId;
   let orderBy = { id: "asc" };
 
   if (cursorId) {
@@ -100,7 +109,9 @@ export const getAllUsers = async (params = {}) => {
       take: DATA_LIMIT + 1,
       select: USER_LIST_SELECT,
     }),
-    search ? getSearchUserCounts(searchNameFilter) : getUserCounts(),
+    search || branchId
+      ? getScopedUserCounts({ branchId, searchFilter: searchNameFilter })
+      : getUserCounts(),
   ]);
 
   const totalCount = counts.total;
