@@ -1,4 +1,4 @@
-node_modules
+bnode_modules
 npm-debug.log*
 
 .git
