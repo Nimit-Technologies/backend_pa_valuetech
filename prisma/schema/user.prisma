@@ -25,7 +25,7 @@ model User {
   address    Address    @relation(fields: [address_id], references: [id], onDelete: Restrict)
 
   remarks       Remark[]
-  cases         Case[]   @relation("CaseUser")
+  cases         Case[]   @relation("CaseEmployee")
   created_cases Case[]   @relation("CaseCreatedBy")
   deleted_cases Case[]   @relation("CaseDeletedBy")
 

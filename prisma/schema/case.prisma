@@ -7,18 +7,25 @@ model Case {
   customer_contact_number String
   case_type               String
 
+  is_active Boolean @default(true)
+
   business_type_id String
 
   bank_id       String
   branch_id     String
-  user_id       String
+  employee_id   String
   address_id    String
   created_by_id String
   deleted_by_id String?
 
-  branch        Branch       @relation(fields: [branch_id], references: [id], onDelete: Restrict)
-  bank          Bank         @relation(fields: [bank_id], references: [id], onDelete: Restrict)
-  user          User         @relation("CaseUser", fields: [user_id], references: [id], onDelete: Restrict)
+  branch Branch @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  bank   Bank   @relation(fields: [bank_id], references: [id], onDelete: Restrict)
+
+  // The case is assigned by the employee's own code rather than the User cuid,
+  // so the API takes the employee_id the client already knows. employee_id is
+  // editable on the user, so renames cascade here instead of being rejected.
+  employee User @relation("CaseEmployee", fields: [employee_id], references: [employee_id], onDelete: Restrict, onUpdate: Cascade)
+
   address       Address      @relation(fields: [address_id], references: [id], onDelete: Restrict)
   created_by    User         @relation("CaseCreatedBy", fields: [created_by_id], references: [id], onDelete: Restrict)
   deleted_by    User?        @relation("CaseDeletedBy", fields: [deleted_by_id], references: [id], onDelete: Restrict)
@@ -47,7 +54,7 @@ model Case {
 
   @@index([file_number, branch_id])
   @@index([branch_id])
-  @@index([user_id])
+  @@index([employee_id])
   @@index([address_id])
   @@index([created_by_id])
   @@index([deleted_by_id])

@@ -1,4 +1,4 @@
-import { getSuperAdminSummary } from "./dashboard.service.js";
+import { getSuperAdminSummary } from "./superAdmin.service.js";
 
 // GET /api/v1/dashboard/super-admin
 export const getSuperAdminDashboard = async (req, res) => {

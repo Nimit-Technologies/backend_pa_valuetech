@@ -8,7 +8,7 @@ model Branch {
   banks       Bank[]
   remarks     Remark[]
 
-  history     Json         @default("[]")
+  history Json @default("[]")
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

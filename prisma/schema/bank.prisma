@@ -1,5 +1,5 @@
 model Bank {
-  id String @id @default(cuid())
+  id               String  @id @default(cuid())
   // name, bank_branch_code and gst_number are each unique per branch, not
   // globally: the same bank/branch-code/GST number may exist under a
   // different branch, just not twice within the same one. See @@unique

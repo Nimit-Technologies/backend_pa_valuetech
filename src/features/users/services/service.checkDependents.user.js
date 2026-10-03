@@ -18,8 +18,10 @@ export const getUserDependents = async (userId) => {
     assignedAllocations,
     madeAllocations,
   ] = await Promise.all([
+    // Cases carry the employee's code, not their cuid, so this one filters
+    // through the relation instead of a scalar column.
     prisma.case.findMany({
-      where: { user_id: userId },
+      where: { employee: { id: userId } },
       select: { id: true, file_number: true },
     }),
     prisma.case.findMany({
