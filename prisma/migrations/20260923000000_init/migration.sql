@@ -75,6 +75,7 @@ CREATE TABLE "business_types" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "branch_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3),
@@ -265,10 +266,10 @@ CREATE UNIQUE INDEX "branches_name_key" ON "branches"("name");
 CREATE INDEX "branches_name_idx" ON "branches"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "business_types_name_key" ON "business_types"("name");
+CREATE INDEX "business_types_branch_id_idx" ON "business_types"("branch_id");
 
 -- CreateIndex
-CREATE INDEX "business_types_name_idx" ON "business_types"("name");
+CREATE UNIQUE INDEX "business_types_name_branch_id_key" ON "business_types"("name", "branch_id");
 
 -- CreateIndex
 CREATE INDEX "cases_file_number_branch_id_idx" ON "cases"("file_number", "branch_id");
@@ -398,6 +399,9 @@ ALTER TABLE "banks" ADD CONSTRAINT "banks_branch_id_fkey" FOREIGN KEY ("branch_i
 
 -- AddForeignKey
 ALTER TABLE "banks" ADD CONSTRAINT "banks_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "addresses"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "business_types" ADD CONSTRAINT "business_types_branch_id_fkey" FOREIGN KEY ("branch_id") REFERENCES "branches"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "cases" ADD CONSTRAINT "cases_branch_id_fkey" FOREIGN KEY ("branch_id") REFERENCES "branches"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

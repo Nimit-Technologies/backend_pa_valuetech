@@ -1,9 +1,14 @@
 import { getBusinessTypeById as getBusinessTypeByIdService } from "../services/service.get.business-typeById.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 
 export const getBusinessTypeById = async (req, res) => {
   try {
     const { id } = req.params;
-    const businessType = await getBusinessTypeByIdService(id);
+    // Resolved before the DB call so a branch-scoped caller's branch_id is
+    // filtered in the query itself, instead of fetching the business type
+    // and discarding it after if it belongs to another branch.
+    const scope = resolveBranchScope(req);
+    const businessType = await getBusinessTypeByIdService(id, scope);
 
     if (!businessType || businessType.deleted_at) {
       return res

@@ -160,7 +160,7 @@ The top-level organisational unit. Every `Department` and `User` points back to 
 | `deleted_at`                | `DateTime?` |                        | Soft-delete marker                                                  |
 | `created_at` / `updated_at` | `DateTime`  |                        | Timestamps                                                          |
 
-**Back-relations:** `departments Department[]`, `users User[]`, `cases Case[]` (Case is a separate model, not covered here).
+**Back-relations:** `departments Department[]`, `users User[]`, `cases Case[]`, `business_types BusinessType[]` (Case and BusinessType are separate models, not covered here).
 
 **Delete rule:** cannot be hard-deleted while any `Department` or `User` still points to it (`onDelete: Restrict` on their side).
 

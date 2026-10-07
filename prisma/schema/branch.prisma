@@ -8,6 +8,8 @@ model Branch {
   banks       Bank[]
   remarks     Remark[]
 
+  business_types BusinessType[]
+
   history Json @default("[]")
 
   created_at DateTime  @default(now())

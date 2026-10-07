@@ -21,7 +21,7 @@ router.get(
   isBranchAdminOrCoordinator,
   getAllBanks,
 );
-router.get("/:id", isAuthenticated, isBranchAdmin, getBankById);
+router.get("/:id", isAuthenticated, isBranchAdminOrCoordinator, getBankById);
 router.post("/create-bank", isAuthenticated, isBranchAdmin, createBank);
 router.put("/update/:id", isAuthenticated, isBranchAdmin, updateBank);
 router.delete(

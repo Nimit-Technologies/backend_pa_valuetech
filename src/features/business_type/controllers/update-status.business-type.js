@@ -1,11 +1,16 @@
 import { getBusinessTypeById } from "../services/service.get.business-typeById.js";
 import { setBusinessTypeStatus } from "../services/service.updateStatus.business-type.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 
 export const updateBusinessTypeStatus = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existing = await getBusinessTypeById(id);
+    // Resolved before the DB call so a branch-scoped caller's branch_id is
+    // filtered in the query itself, instead of fetching the business type
+    // and discarding it after if it belongs to another branch.
+    const scope = resolveBranchScope(req);
+    const existing = await getBusinessTypeById(id, scope);
     if (!existing) {
       return res
         .status(404)

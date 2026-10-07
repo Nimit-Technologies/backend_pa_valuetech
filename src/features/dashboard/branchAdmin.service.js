@@ -10,7 +10,6 @@ import { getUserCounts } from "../users/utils/user-count.js";
 // the client renders that as unknown rather than zero.
 export const getBranchAdminSummary = async () => {
   const [banks, departments, roles, users] = await Promise.all([
-
     getBankCounts(),
     getDepartmentCounts(),
     getRoleCounts(),

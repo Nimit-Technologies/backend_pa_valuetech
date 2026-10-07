@@ -1,8 +1,11 @@
 model BusinessType {
   id String @id @default(cuid())
 
-  name      String  @unique
+  name      String
   is_active Boolean @default(true)
+  branch_id String
+
+  branch Branch @relation(fields: [branch_id], references: [id], onDelete: Restrict)
 
   cases       Case[]
   allocations Allocation[]
@@ -11,6 +14,10 @@ model BusinessType {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  @@index([name])
+  // Names are lowercased by the zod schema before they are written, so this
+  // behaves case-insensitively. It also serves the lookups on `name` alone
+  // that the old separate index covered.
+  @@unique([name, branch_id])
+  @@index([branch_id])
   @@map("business_types")
 }

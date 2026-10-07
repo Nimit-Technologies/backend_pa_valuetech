@@ -8,22 +8,32 @@ import { softDeleteDepartment } from "./controllers/softDelete.department.js";
 import { updateDepartmentStatus } from "./controllers/update-status.department.js";
 import { restoreDepartment } from "./controllers/restore.department.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
-import { isAdmin } from "../../middlewares/authorize.js";
+import { isAdmin, isSuperAdmin } from "../../middlewares/authorize.js";
 
 const router = Router();
 
 router.get("/all-department", isAuthenticated, isAdmin, getAllDepartments);
-router.get("/:id", isAuthenticated, isAdmin, getDepartmentById);
-router.post("/create-department", isAuthenticated, isAdmin, createDepartment);
-router.put("/update/:id", isAuthenticated, isAdmin, updateDepartment);
-router.delete("/delete/:id", isAuthenticated, isAdmin, deleteDepartment);
+router.get("/:id", isAuthenticated, isSuperAdmin, getDepartmentById);
+router.post(
+  "/create-department",
+  isAuthenticated,
+  isSuperAdmin,
+  createDepartment,
+);
+router.put("/update/:id", isAuthenticated, isSuperAdmin, updateDepartment);
+router.delete("/delete/:id", isAuthenticated, isSuperAdmin, deleteDepartment);
 router.delete(
   "/soft-delete/:id",
   isAuthenticated,
-  isAdmin,
+  isSuperAdmin,
   softDeleteDepartment,
 );
-router.patch("/status/:id", isAuthenticated, isAdmin, updateDepartmentStatus);
-router.patch("/restore/:id", isAuthenticated, isAdmin, restoreDepartment);
+router.patch(
+  "/status/:id",
+  isAuthenticated,
+  isSuperAdmin,
+  updateDepartmentStatus,
+);
+router.patch("/restore/:id", isAuthenticated, isSuperAdmin, restoreDepartment);
 
 export default router;

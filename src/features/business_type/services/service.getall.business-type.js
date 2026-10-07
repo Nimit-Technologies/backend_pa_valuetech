@@ -1,6 +1,7 @@
 import prisma from "../../../prisma/client.js";
 import { CREDENTIALS } from "../../../constant/credentials.js";
 import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import { branchSelect } from "./business-type.service.helpers.js";
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
 
@@ -18,6 +19,7 @@ export const getAllBusinessTypes = async (query) => {
   }
 
   const filter = { deleted_at: null };
+  if (query.branchId) filter.branch_id = query.branchId;
   let orderBy = { id: "asc" };
 
   if (cursorId) {
@@ -33,6 +35,7 @@ export const getAllBusinessTypes = async (query) => {
     where: filter,
     orderBy,
     take: dataLimit + 1,
+    include: { branch: branchSelect },
   });
 
   if (!initialBusinessTypes.length) {

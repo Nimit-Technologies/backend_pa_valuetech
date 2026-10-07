@@ -1,8 +1,10 @@
 import { getAllBusinessTypes as getAllBusinessTypesService } from "../services/service.getall.business-type.js";
+import { resolveBranchScope } from "../../../utils/branch-scope.js";
 
 export const getAllBusinessTypes = async (req, res) => {
   try {
     const { direction, cursorId } = req.query;
+    const branchId = resolveBranchScope(req);
     const {
       businessTypes,
       businessTypeFirstId,
@@ -11,7 +13,7 @@ export const getAllBusinessTypes = async (req, res) => {
       hasPreviousPage,
       businessTypeLength,
       dataLimit,
-    } = await getAllBusinessTypesService({ direction, cursorId });
+    } = await getAllBusinessTypesService({ direction, cursorId, branchId });
 
     res.json({
       success: true,

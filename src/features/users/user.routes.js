@@ -13,7 +13,7 @@ import { forgotPassword } from "./controllers/forgot-password.user.js";
 import { resetPassword } from "./controllers/reset-password.user.js";
 import { getOriginalAadhaar } from "./controllers/get-aadhaar.user.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
-import { isAdmin } from "../../middlewares/authorize.js";
+import { isSuperAdmin, isAdmin } from "../../middlewares/authorize.js";
 import { passwordResetLimiter } from "../../middlewares/password-reset-limiter.js";
 
 const router = Router();
@@ -26,12 +26,17 @@ router.post("/reset-password", passwordResetLimiter, resetPassword);
 router.post("/aadhaar", isAuthenticated, getOriginalAadhaar);
 
 router.get("/all-user", isAuthenticated, isAdmin, getAllUsers);
-router.get("/:id", isAuthenticated, getUserById);
-router.post("/create-user", isAuthenticated, isAdmin, createUser);
-router.put("/update/:id", isAuthenticated, isAdmin, updateUser);
-router.delete("/soft-delete/:id", isAuthenticated, isAdmin, softDeleteUser);
-router.patch("/status/:id", isAuthenticated, isAdmin, updateUserStatus);
-router.patch("/restore/:id", isAuthenticated, isAdmin, restoreUser);
-router.delete("/delete/:id", isAuthenticated, isAdmin, deleteUser);
+router.get("/:id", isAuthenticated, isAdmin, getUserById);
+router.post("/create-user", isAuthenticated, isSuperAdmin, createUser);
+router.put("/update/:id", isAuthenticated, isSuperAdmin, updateUser);
+router.delete(
+  "/soft-delete/:id",
+  isAuthenticated,
+  isSuperAdmin,
+  softDeleteUser,
+);
+router.patch("/status/:id", isAuthenticated, isSuperAdmin, updateUserStatus);
+router.patch("/restore/:id", isAuthenticated, isSuperAdmin, restoreUser);
+router.delete("/delete/:id", isAuthenticated, isSuperAdmin, deleteUser);
 
 export default router;
