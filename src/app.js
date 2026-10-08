@@ -7,6 +7,7 @@ import { CREDENTIALS } from "./constant/credentials.js";
 import { globalLimiter } from "./middlewares/global-limiter.js";
 import { globalErrorHandler } from "./middlewares/global-error-handler.js";
 import { AppError } from "./utils/app-error.js";
+import { getDatabaseHealth } from "./utils/db-health.js";
 
 const app = express();
 
@@ -42,8 +43,21 @@ app.get("/", (req, res) => {
   res.json({ status: 200, message: "server is running fine" });
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: 200, message: "server health running fine" });
+// Always 200, even with the database down: Coolify restarts the container on a
+// failing healthcheck, which would turn a Supabase outage into a restart loop
+// while the process itself is perfectly healthy. Alert on the `database` field
+// instead of on the status code.
+app.get("/health", async (req, res) => {
+  const database = await getDatabaseHealth();
+
+  res.json({
+    status: 200,
+    message: "server health running fine",
+    database: database.ok ? "up" : "down",
+    ...(CREDENTIALS?.APP_ENV === "development" && !database.ok
+      ? { database_error: database.error, database_code: database.code }
+      : {}),
+  });
 });
 
 // -- API Routes --

@@ -49,7 +49,10 @@ export const getAllRoles = async (query) => {
     throw error;
   }
 
-  const filter = { deleted_at: null };
+  // Soft-deleted roles stay in the list (same as departments) so the UI can
+  // show them as deleted and offer restore; each row carries `is_deleted`.
+  // The counts below deliberately stay scoped to the non-deleted set.
+  const filter = {};
   if (branchId) filter.branch_id = branchId;
   let orderBy = { id: "asc" };
 

@@ -72,9 +72,11 @@ export const formatRoleResponse = (data) => {
 
     const { history, created_at, updated_at, deleted_at, ...rest } = role;
 
+    const base = { ...rest, is_deleted: Boolean(deleted_at) };
+
     if (isDev) {
       return {
-        ...rest,
+        ...base,
         history: history ?? [],
         created_at: formatDateTime(created_at),
         updated_at: formatDateTime(updated_at),
@@ -82,7 +84,7 @@ export const formatRoleResponse = (data) => {
       };
     }
 
-    return rest;
+    return base;
   };
 
   if (Array.isArray(data)) {
