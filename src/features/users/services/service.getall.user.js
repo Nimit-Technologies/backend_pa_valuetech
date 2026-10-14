@@ -12,6 +12,7 @@ const USER_LIST_SELECT = {
   last_name: true,
   email: true,
   phone: true,
+  business_type_id: true,
   aadhaar_number: true,
   is_active: true,
   branch: relationSelect,

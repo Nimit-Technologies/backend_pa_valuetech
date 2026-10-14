@@ -3,8 +3,8 @@ import { restoreCase as restoreCaseService } from "../services/service.restore.c
 import { getBankById } from "../../banks/services/service.getById.bank.js";
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
-import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
-import { resolveBranchScope } from "../../../utils/branch-scope.js";
+import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
+import { resolveCaseScope } from "../../../utils/case-scope.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 import {
   createCaseIdentitySnapshot,
@@ -13,23 +13,11 @@ import {
 
 export const restoreCase = async (req, res, next) => {
   try {
+    if (respondIfInvalidIdParam(req, res, next)) return;
     const { id } = req.params;
-    const isValidId = isValidCuid(id);
 
-    if (!isValidId) {
-      if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
-        return next();
-      }
-      return res
-        .status(404)
-        .json({ success: false, message: "Id is not valid" });
-    }
-
-    // The restore is recorded as an update-history row, which needs an
-    // identifiable actor to attribute it to.
+    // The restore is recorded as a history row, which needs an identifiable
+    // actor to attribute it to.
     const actor = createCaseIdentitySnapshot(req.user);
     if (!actor) {
       return res.status(401).json({
@@ -38,11 +26,8 @@ export const restoreCase = async (req, res, next) => {
       });
     }
 
-    // Resolved before the DB call so a branch-scoped caller's branch_id is
-    // filtered in the query itself, instead of fetching the case first and
-    // discarding it after if it belongs to another branch.
-    const scope = resolveBranchScope(req);
-    const existing = await getCaseById(id, scope);
+    const scope = resolveCaseScope(req);
+    const existing = await getCaseById(id, scope.where);
     if (!existing) {
       return res
         .status(404)
@@ -80,7 +65,7 @@ export const restoreCase = async (req, res, next) => {
     )
       return;
 
-    const caseRecord = await restoreCaseService(id, actor, existing);
+    const caseRecord = await restoreCaseService(id, actor);
 
     logAuthEvent("case_restored", {
       case_id: id,

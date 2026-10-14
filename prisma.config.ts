@@ -7,6 +7,9 @@ export default defineConfig({
   schema: "prisma/schema",
   migrations: {
     path: "prisma/migrations",
+    // Seeds the ten system case statuses. Idempotent, so it is safe to re-run
+    // after any migrate/reset.
+    seed: "node prisma/seed.js",
   },
   datasource: {
     url:

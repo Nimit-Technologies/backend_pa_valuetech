@@ -4,7 +4,14 @@ import { recordUserTransition } from "../utils/user-count.js";
 const relationSelect = { select: { id: true, name: true } };
 
 export const updateUser = async (id, data, historyEntry, existing) => {
-  const { branch_id, department_id, role_id, address, ...rest } = data;
+  const {
+    branch_id,
+    department_id,
+    role_id,
+    business_type_id,
+    address,
+    ...rest
+  } = data;
   const currentHistory = Array.isArray(existing?.history)
     ? existing.history
     : [];
@@ -20,6 +27,14 @@ export const updateUser = async (id, data, historyEntry, existing) => {
       ...(branch_id && { branch: { connect: { id: branch_id } } }),
       ...(department_id && { department: { connect: { id: department_id } } }),
       ...(role_id && { role: { connect: { id: role_id } } }),
+      // Explicit null moves a user off their business line; undefined leaves it
+      // untouched, so the two cases cannot be collapsed into one truthy check.
+      ...(business_type_id !== undefined && {
+        business_type:
+          business_type_id === null
+            ? { disconnect: true }
+            : { connect: { id: business_type_id } },
+      }),
       ...(address && { address: { update: address } }),
       // Any field here (role/branch/department/status/password) can change
       // what an already-issued token is allowed to do — bump token_version
@@ -40,6 +55,7 @@ export const updateUser = async (id, data, historyEntry, existing) => {
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,
+      business_type: relationSelect,
       address: true,
       created_at: true,
       updated_at: true,

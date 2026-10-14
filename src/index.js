@@ -9,6 +9,8 @@ import bankRoutes from "./features/banks/banks.routes.js";
 import caseRoutes from "./features/case/case.routes.js";
 import dashboardRoutes from "./features/dashboard/dashboard.routes.js";
 import businessRoutes from "./features/business_type/business-type.routes.js";
+import statusRoutes from "./features/status/status.routes.js";
+import remarkRoutes from "./features/remark/remark.routes.js";
 
 const router = Router();
 
@@ -22,5 +24,7 @@ router.use("/bank", bankRoutes);
 router.use("/case", caseRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/business", businessRoutes);
+router.use("/status", statusRoutes);
+router.use("/remark", remarkRoutes);
 
 export default router;

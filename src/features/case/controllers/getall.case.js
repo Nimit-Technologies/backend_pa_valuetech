@@ -1,12 +1,14 @@
 import { getAllCases as getAllCasesService } from "../services/service.getall.case.js";
-import { resolveBranchScope } from "../../../utils/branch-scope.js";
+import { resolveCaseScope } from "../../../utils/case-scope.js";
 import { formatCaseResponse } from "../utils/case-history.js";
 
 export const getAllCases = async (req, res) => {
   try {
-    const { direction, cursorId, search } = req.query;
-    // A non-super-admin only ever sees cases in their own branch.
-    const branchId = resolveBranchScope(req);
+    const { direction, cursorId, search, status, include_finished } = req.query;
+
+    // Branch admin sees their branch, a coordinator their own business type
+    // within it, an engineer only the cases assigned to them.
+    const scope = resolveCaseScope(req);
 
     const {
       cases,
@@ -18,7 +20,15 @@ export const getAllCases = async (req, res) => {
       dataLimit,
       totalCount,
       totalActiveCount,
-    } = await getAllCasesService({ direction, cursorId, search, branchId });
+    } = await getAllCasesService({
+      direction,
+      cursorId,
+      search,
+      scopeWhere: scope.where,
+      statusCode: status,
+      includeFinished: include_finished === "true",
+    });
+
     res.json({
       success: true,
       data: formatCaseResponse(cases),

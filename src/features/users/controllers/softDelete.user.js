@@ -1,5 +1,6 @@
 import { getUserById } from "../services/service.getById.user.js";
 import { softDeleteUser as softDeleteUserService } from "../services/service.softDelete.user.js";
+import { respondIfHoldingActiveCases } from "../services/service.checkCaseLoad.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 import {
@@ -35,6 +36,10 @@ export const softDeleteUser = async (req, res, next) => {
         .status(409)
         .json({ success: false, message: "User is already deleted" });
     }
+
+    // Same reasoning as deactivation: a soft-deleted user cannot log in, so any
+    // case still assigned to them silently stops moving.
+    if (await respondIfHoldingActiveCases(res, id, "delete this user")) return;
 
     const historyEntry = createUserHistoryEntry("SOFT_DELETE", req.user);
     const user = await softDeleteUserService(id, historyEntry, existing);

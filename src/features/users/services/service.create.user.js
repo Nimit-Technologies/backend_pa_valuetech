@@ -16,6 +16,7 @@ export const createUser = async (data, historyEntry) => {
     branch_id,
     department_id,
     role_id,
+    business_type_id,
     address,
   } = data;
 
@@ -33,6 +34,10 @@ export const createUser = async (data, historyEntry) => {
       branch: { connect: { id: branch_id } },
       department: { connect: { id: department_id } },
       role: { connect: { id: role_id } },
+      // Only coordinators carry one; omitted leaves the column null.
+      ...(business_type_id && {
+        business_type: { connect: { id: business_type_id } },
+      }),
       address: { create: address },
     },
     select: {
@@ -48,6 +53,7 @@ export const createUser = async (data, historyEntry) => {
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,
+      business_type: relationSelect,
       address: true,
       created_at: true,
       updated_at: true,

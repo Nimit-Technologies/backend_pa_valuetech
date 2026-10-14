@@ -44,6 +44,11 @@ export const userSchema = z.object({
   department_id: z.string().min(1, "Department is required"),
   role_id: z.string().min(1, "Role is required"),
 
+  // Which business line this user handles. Required in practice for
+  // coordinators — resolveCaseScope fails closed, so a coordinator without one
+  // sees no cases at all — and null for every other role.
+  business_type_id: z.string().min(1).optional(),
+
   address: addressSchema,
 });
 
@@ -100,6 +105,8 @@ export const updateUserSchema = z
     branch_id: z.string().min(1).optional(),
     department_id: z.string().min(1).optional(),
     role_id: z.string().min(1).optional(),
+    // Nullable so a user can be moved off a business line as well as onto one.
+    business_type_id: z.string().min(1).nullable().optional(),
     is_active: z.boolean().optional(),
     address: partialAddressSchema.optional(),
   })

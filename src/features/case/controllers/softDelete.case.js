@@ -1,7 +1,7 @@
 import { getCaseById } from "../services/service.getById.case.js";
 import { softDeleteCase as softDeleteCaseService } from "../services/service.softDelete.case.js";
-import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
-import { resolveBranchScope } from "../../../utils/branch-scope.js";
+import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
+import { resolveCaseScope } from "../../../utils/case-scope.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 import {
   createCaseIdentitySnapshot,
@@ -10,20 +10,8 @@ import {
 
 export const softDeleteCase = async (req, res, next) => {
   try {
+    if (respondIfInvalidIdParam(req, res, next)) return;
     const { id } = req.params;
-    const isValidId = isValidCuid(id);
-
-    if (!isValidId) {
-      if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
-        return next();
-      }
-      return res
-        .status(404)
-        .json({ success: false, message: "Id is not valid" });
-    }
 
     // deleted_by_id and the deleted_by_* snapshot are written together, so the
     // delete has to be attributable to an identifiable actor.
@@ -35,11 +23,8 @@ export const softDeleteCase = async (req, res, next) => {
       });
     }
 
-    // Resolved before the DB call so a branch-scoped caller's branch_id is
-    // filtered in the query itself, instead of fetching the case first and
-    // discarding it after if it belongs to another branch.
-    const scope = resolveBranchScope(req);
-    const existing = await getCaseById(id, scope);
+    const scope = resolveCaseScope(req);
+    const existing = await getCaseById(id, scope.where);
     if (!existing) {
       return res
         .status(404)
@@ -52,10 +37,12 @@ export const softDeleteCase = async (req, res, next) => {
         .json({ success: false, message: "Case is already deleted" });
     }
 
-    const caseRecord = await softDeleteCaseService(id, actor, existing);
+    const caseRecord = await softDeleteCaseService(id, actor);
 
     logAuthEvent("case_soft_deleted", {
       case_id: id,
+      file_number: existing.file_number,
+      branch_id: existing.branch_id,
       actor_id: req.user?.id ?? null,
       ip: req.ip,
       success: true,
