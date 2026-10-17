@@ -19,9 +19,9 @@ const relationName = (value) => {
 };
 
 // Unlike Role/Bank/User, Case does not carry a `history` Json column. It keeps
-// the actor's identity in immutable columns (created_by_* / deleted_by_*) and
-// one CaseUpdateHistory row per update — all three want the same four fields,
-// so one snapshot feeds all of them.
+// the actor's identity in immutable columns (created_by_* / updated_by_* /
+// deleted_by_*) and one CaseUpdateHistory row per operation — all of them want
+// the same four fields, so one snapshot feeds them all.
 //
 // Returns null when there is no authenticated actor: created_by_id and
 // CaseUpdateHistory.updated_by_id are both required, so a write with no actor
@@ -42,13 +42,21 @@ export const createCaseIdentitySnapshot = (user) => {
 
 // Nested-create payload for one CaseUpdateHistory row.
 //
-// The table has no `action` column, so an update, a soft-delete and a restore
-// all land as a plain "this actor touched the case at this time" entry; the
-// action itself is recoverable from deleted_at / the audit log.
-export const createCaseHistoryEntry = (actor) => {
+// `action` says what happened, so an update, a status change and a restore are
+// no longer indistinguishable. `from`/`to` carry status codes rather than ids
+// so the row keeps reading correctly if a status is renamed or removed, and
+// `reason` records why a backward or terminal move was made.
+export const createCaseHistoryEntry = (
+  actor,
+  { action, from, to, reason } = {},
+) => {
   if (!actor?.id) return null;
 
   return {
+    action,
+    ...(from !== undefined && { from_status: from }),
+    ...(to !== undefined && { to_status: to }),
+    ...(reason !== undefined && { reason }),
     updated_by: { connect: { id: actor.id } },
     first_name: actor.first_name,
     employee_id: actor.employee_id,
@@ -64,6 +72,23 @@ export const createdBySnapshotFields = (actor) => ({
   created_by_employee_id: actor.employee_id,
   created_by_role: actor.role,
   created_by_department: actor.department,
+});
+
+// Columns written when a case's *data* changes — a field edit or an
+// assignment. Deliberately not written by status transitions, soft-delete or
+// restore: those are "last touched", not "last edited", and are recorded in
+// update_history instead.
+//
+// Carries its own timestamp rather than relying on `updated_at`, which Prisma
+// bumps on every write and would otherwise show a time that disagrees with the
+// identity beside it.
+export const updatedBySnapshotFields = (actor) => ({
+  updated_by: { connect: { id: actor.id } },
+  updated_by_first_name: actor.first_name,
+  updated_by_employee_id: actor.employee_id,
+  updated_by_role: actor.role,
+  updated_by_department: actor.department,
+  updated_by_at: new Date(),
 });
 
 // Columns written when a case is soft-deleted, and the same columns cleared
@@ -87,30 +112,48 @@ export const clearedDeletedBySnapshotFields = () => ({
 export const formatCaseResponse = (data) => {
   if (!data) return data;
 
-  const isDev = process.env.NODE_ENV === "development";
-
   const formatSingle = (caseRecord) => {
     if (!caseRecord || typeof caseRecord !== "object") return caseRecord;
 
-    const { update_history, created_at, updated_at, deleted_at, ...rest } =
-      caseRecord;
+    const {
+      update_history,
+      remarks,
+      created_at,
+      updated_at,
+      deleted_at,
+      ...rest
+    } = caseRecord;
 
-    const base = { ...rest, is_deleted: Boolean(deleted_at) };
-
-    if (isDev) {
-      return {
-        ...base,
-        update_history: (update_history ?? []).map((entry) => ({
+    // Timestamps and the audit trail are returned in every environment, not
+    // just development: the created_by / updated_by snapshots are only half an
+    // audit record without the time they happened, and a reassigned engineer
+    // needs the history to see the work done before them.
+    return {
+      ...rest,
+      is_deleted: Boolean(deleted_at),
+      created_at: formatDateTime(created_at),
+      updated_at: formatDateTime(updated_at),
+      deleted_at: formatDateTime(deleted_at),
+      ...(update_history && {
+        update_history: update_history.map((entry) => ({
           ...entry,
           updated_at: formatDateTime(entry.updated_at),
         })),
-        created_at: formatDateTime(created_at),
-        updated_at: formatDateTime(updated_at),
-        deleted_at: formatDateTime(deleted_at),
-      };
-    }
-
-    return base;
+      }),
+      // Only the detail view carries remarks. Their timestamps are formatted
+      // the same way as everything else here, so one payload does not mix two
+      // date formats — note this makes a remark read through the case look
+      // different from the same remark read through `GET /remark/:caseId`,
+      // which returns them raw. `is_edited` is already resolved by shapeRemark,
+      // before the comparison would be lost to formatting.
+      ...(remarks && {
+        remarks: remarks.map((remark) => ({
+          ...remark,
+          created_at: formatDateTime(remark.created_at),
+          updated_at: formatDateTime(remark.updated_at),
+        })),
+      }),
+    };
   };
 
   if (Array.isArray(data)) {

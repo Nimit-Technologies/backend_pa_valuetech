@@ -24,6 +24,10 @@ const buildTokenPayload = (user) => ({
   phone: user?.phone,
   branch: { id: user?.branch.id, name: user?.branch.name },
   department: user?.department,
+  // Drives the coordinator tier of resolveCaseScope. Null for every other
+  // role. Changing a user's business type must bump token_version, or they
+  // keep the old scope until this token expires.
+  business_type_id: user?.business_type_id ?? null,
   token_version: user?.token_version,
 });
 

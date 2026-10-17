@@ -9,6 +9,7 @@ import { updateRoleStatus } from "./controllers/update-status.role.js";
 import { restoreRole } from "./controllers/restore.role.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
 import { isSuperAdmin, isAdmin } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -24,6 +25,12 @@ router.delete(
 );
 router.patch("/status/:id", isAuthenticated, isSuperAdmin, updateRoleStatus);
 router.patch("/restore/:id", isAuthenticated, isSuperAdmin, restoreRole);
-router.delete("/delete/:id", isAuthenticated, isSuperAdmin, deleteRole);
+router.delete(
+  "/delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isSuperAdmin,
+  deleteRole,
+);
 
 export default router;

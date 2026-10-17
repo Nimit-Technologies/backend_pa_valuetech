@@ -9,6 +9,9 @@ model BusinessType {
 
   cases       Case[]
   allocations Allocation[]
+  // Coordinators assigned to this business line. Only coordinators carry the
+  // link; every other role leaves it null.
+  users       User[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

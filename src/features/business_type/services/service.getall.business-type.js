@@ -1,12 +1,13 @@
 import prisma from "../../../prisma/client.js";
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import { branchSelect } from "./business-type.service.helpers.js";
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
 
 export const getAllBusinessTypes = async (query) => {
-  const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
 
@@ -18,7 +19,16 @@ export const getAllBusinessTypes = async (query) => {
     throw error;
   }
 
-  const filter = { deleted_at: null };
+  // Soft-deleted business types stay in the list, as they do for departments
+  // and banks: the row is what carries the Restore action, so filtering them
+  // out here is what made restore unreachable from the UI. The client derives
+  // `isDeleted` from `deleted_at` (see normalizeBusiness) — this endpoint
+  // returns raw rows, so no serializer change is needed.
+  //
+  // Note: unlike bank and department this endpoint sends no totals, so the
+  // "Total Businesses" card falls back to the loaded page length and now
+  // counts deleted rows along with the rest.
+  const filter = {};
   if (query.branchId) filter.branch_id = query.branchId;
   let orderBy = { id: "asc" };
 
@@ -34,7 +44,7 @@ export const getAllBusinessTypes = async (query) => {
   const initialBusinessTypes = await prisma.businessType.findMany({
     where: filter,
     orderBy,
-    take: dataLimit + 1,
+    take: DATA_LIMIT + 1,
     include: { branch: branchSelect },
   });
 
@@ -46,11 +56,11 @@ export const getAllBusinessTypes = async (query) => {
       hasNextPage: false,
       hasPreviousPage: false,
       businessTypeLength: 0,
-      dataLimit,
+      dataLimit: DATA_LIMIT,
     };
   }
 
-  const hasMore = initialBusinessTypes.length > dataLimit;
+  const hasMore = initialBusinessTypes.length > DATA_LIMIT;
   if (hasMore) initialBusinessTypes.pop();
 
   const finalBusinessTypes =
@@ -66,6 +76,6 @@ export const getAllBusinessTypes = async (query) => {
     hasPreviousPage:
       direction === PAGINATION_DIRECTION.PREVIOUS ? hasMore : !!cursorId,
     businessTypeLength: finalBusinessTypes.length,
-    dataLimit,
+    dataLimit: DATA_LIMIT,
   };
 };

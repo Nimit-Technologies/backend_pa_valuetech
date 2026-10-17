@@ -1,13 +1,13 @@
 import prisma from "../../../prisma/client.js";
+import { remarkInclude, shapeRemark } from "./remark.service.helpers.js";
 
-const relationSelect = { select: { id: true, name: true } };
-const userSelect = {
-  select: { id: true, first_name: true, last_name: true, employee_id: true },
-};
-
-export const createRemark = (data) => {
+// The branch/department/role names are snapshotted alongside the relation ids
+// so a remark keeps reading correctly even if the user, branch, department or
+// role backing it is later renamed, deactivated or deleted.
+export const createRemark = async (data) => {
   const {
     content,
+    case_id,
     user_id,
     branch_id,
     department_id,
@@ -19,9 +19,10 @@ export const createRemark = (data) => {
     role_name,
   } = data;
 
-  return prisma.remark.create({
+  const remark = await prisma.remark.create({
     data: {
       content,
+      case: { connect: { id: case_id } },
       user: { connect: { id: user_id } },
       branch: { connect: { id: branch_id } },
       department: { connect: { id: department_id } },
@@ -32,11 +33,8 @@ export const createRemark = (data) => {
       department_name,
       role_name,
     },
-    include: {
-      user: userSelect,
-      branch: relationSelect,
-      department: relationSelect,
-      role: relationSelect,
-    },
+    include: remarkInclude,
   });
+
+  return shapeRemark(remark);
 };

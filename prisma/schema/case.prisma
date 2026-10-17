@@ -1,3 +1,11 @@
+enum CancellationReason {
+  withdrawn_by_bank
+  customer_declined
+  duplicate
+  data_error
+  property_inaccessible
+}
+
 model Case {
   id String @id @default(cuid())
 
@@ -5,44 +13,50 @@ model Case {
   banker_name             String
   customer_name           String
   customer_contact_number String
-  case_type               String
-
-  is_active Boolean @default(true)
+  case_type               String 
 
   business_type_id String
 
   bank_id       String
-  branch_id     String
-  employee_id   String
+  branch_id     String 
+  status_id     String 
   address_id    String
   created_by_id String
+  employee_id   String?
+  updated_by_id String?
   deleted_by_id String?
 
   branch Branch @relation(fields: [branch_id], references: [id], onDelete: Restrict)
   bank   Bank   @relation(fields: [bank_id], references: [id], onDelete: Restrict)
 
-  // The case is assigned by the employee's own code rather than the User cuid,
-  // so the API takes the employee_id the client already knows. employee_id is
-  // editable on the user, so renames cascade here instead of being rejected.
-  employee User @relation("CaseEmployee", fields: [employee_id], references: [employee_id], onDelete: Restrict, onUpdate: Cascade)
+  status Status @relation(fields: [status_id], references: [id], onDelete: Restrict)
+
+  employee User? @relation("CaseEmployee", fields: [employee_id], references: [employee_id], onDelete: Restrict, onUpdate: Cascade)
 
   address       Address      @relation(fields: [address_id], references: [id], onDelete: Restrict)
   created_by    User         @relation("CaseCreatedBy", fields: [created_by_id], references: [id], onDelete: Restrict)
+  updated_by    User?        @relation("CaseUpdatedBy", fields: [updated_by_id], references: [id], onDelete: Restrict)
   deleted_by    User?        @relation("CaseDeletedBy", fields: [deleted_by_id], references: [id], onDelete: Restrict)
   business_type BusinessType @relation(fields: [business_type_id], references: [id], onDelete: Restrict)
 
-  // Snapshot of the creator's identity at the moment the case was created.
-  // Immutable audit trail: must not change if the user/role/department is later edited.
   created_by_first_name  String
   created_by_employee_id String
   created_by_role        String
   created_by_department  String
 
-  // Snapshot of the delete's identity at the moment the case was deleted.
+  updated_by_first_name  String?
+  updated_by_employee_id String?
+  updated_by_role        String?
+  updated_by_department  String?
+  updated_by_at          DateTime?
+
   deleted_by_first_name  String?
   deleted_by_employee_id String?
   deleted_by_role        String?
   deleted_by_department  String?
+
+  closed_at           DateTime?
+  cancellation_reason CancellationReason?
 
   update_history CaseUpdateHistory[]
   remarks        Remark[]
@@ -52,13 +66,18 @@ model Case {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  @@index([file_number, branch_id])
-  @@index([branch_id])
+  @@unique([branch_id, business_type_id, file_number])
   @@index([employee_id])
+  @@index([status_id])
   @@index([address_id])
   @@index([created_by_id])
+  @@index([updated_by_id])
   @@index([deleted_by_id])
   @@index([business_type_id])
   @@index([bank_id])
+  // Exact-match lookups from the similar-case search. Stored values are
+  // already normalized to exactly 10 digits by the zod schema on every write
+  // path, so no separate normalized column is needed.
+  @@index([customer_contact_number])
   @@map("cases")
 }

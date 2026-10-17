@@ -1,5 +1,7 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
 import { getUserCounts } from "../utils/user-count.js";
 
@@ -12,11 +14,15 @@ const USER_LIST_SELECT = {
   last_name: true,
   email: true,
   phone: true,
+  business_type_id: true,
   aadhaar_number: true,
   is_active: true,
   branch: relationSelect,
   department: relationSelect,
   role: relationSelect,
+  // The id alone was already here; the relation gives the UI a name to show
+  // without a second lookup per row.
+  business_type: relationSelect,
   address: true,
   created_at: true,
   updated_at: true,
@@ -24,13 +30,6 @@ const USER_LIST_SELECT = {
 };
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
-
-const DEFAULT_DATA_LIMIT = 10;
-const parsedDataLimit = parseInt(CREDENTIALS.DATA_LIMIT, 10);
-const DATA_LIMIT =
-  Number.isInteger(parsedDataLimit) && parsedDataLimit > 0
-    ? parsedDataLimit
-    : DEFAULT_DATA_LIMIT;
 
 // Used instead of the cached getUserCounts() whenever the list is filtered
 // by search and/or branch: the cache tracks the global total, which would

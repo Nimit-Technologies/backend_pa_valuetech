@@ -1,5 +1,7 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
 import { caseListInclude, shapeCase } from "./case.service.helpers.js";
 import { getCaseCounts } from "../utils/case-count.js";
@@ -20,36 +22,20 @@ const buildSearchFilter = (search) => {
   };
 };
 
-// Used instead of the cached getCaseCounts() whenever the list is filtered by
-// search and/or branch: the cache tracks the global total, which would be
-// wrong for a search result or for a branch-scoped caller.
-const getScopedCaseCounts = async ({ branchId, searchFilter } = {}) => {
-  const groups = await prisma.case.groupBy({
-    by: ["is_active"],
-    where: {
-      deleted_at: null,
-      ...(branchId && { branch_id: branchId }),
-      ...(searchFilter ?? {}),
-    },
-    _count: { _all: true },
-  });
-
-  let total = 0;
-  let active = 0;
-  for (const { is_active, _count } of groups) {
-    total += _count._all;
-    if (is_active) active += _count._all;
-  }
-  return { total, active };
-};
-
+// `scopeWhere` comes from resolveCaseScope: branch for a branch admin, branch +
+// business type for a coordinator, own assignments for an engineer.
+//
+// `statusCode` narrows the list to one lifecycle step, which is how an
+// engineer's work queue is built — "my cases at visit_schedule" rather than a
+// separate endpoint per role. `includeFinished` governs whether terminal cases
+// appear at all, so a day-to-day queue is not buried under closed work.
 export const getAllCases = async (query) => {
-  const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
   const search = String(query.search ?? "").trim();
-  // A non-super-admin only ever sees cases in their own branch.
-  const branchId = query.branchId;
+  const scopeWhere = query.scopeWhere ?? {};
+  const statusCode = query.statusCode;
+  const includeFinished = query.includeFinished;
 
   if (!VALID_DIRECTIONS.includes(direction)) {
     const error = new Error(
@@ -59,32 +45,40 @@ export const getAllCases = async (query) => {
     throw error;
   }
 
-  const filter = { deleted_at: null };
-  if (branchId) filter.branch_id = branchId;
-  let orderBy = { id: "asc" };
+  // The scope filter and the soft-delete filter are the base every other
+  // condition narrows; counts are taken against the same base so they describe
+  // what was returned rather than the whole table.
+  const filter = { deleted_at: null, ...scopeWhere };
 
-  if (cursorId) {
-    if (direction === PAGINATION_DIRECTION.NEXT) {
-      filter.id = { gt: cursorId };
-    } else if (direction === PAGINATION_DIRECTION.PREVIOUS) {
-      filter.id = { lt: cursorId };
-      orderBy = { id: "desc" };
-    }
+  if (statusCode) {
+    filter.status = { code: statusCode };
+  } else if (!includeFinished) {
+    filter.status = { is_terminal: false };
   }
 
   const searchFilter = buildSearchFilter(search);
   if (searchFilter) Object.assign(filter, searchFilter);
 
+  const paginatedFilter = { ...filter };
+  let orderBy = { id: "asc" };
+
+  if (cursorId) {
+    if (direction === PAGINATION_DIRECTION.NEXT) {
+      paginatedFilter.id = { gt: cursorId };
+    } else if (direction === PAGINATION_DIRECTION.PREVIOUS) {
+      paginatedFilter.id = { lt: cursorId };
+      orderBy = { id: "desc" };
+    }
+  }
+
   const [initialCases, counts] = await Promise.all([
     prisma.case.findMany({
-      where: filter,
+      where: paginatedFilter,
       orderBy,
-      take: dataLimit + 1,
+      take: DATA_LIMIT + 1,
       include: caseListInclude,
     }),
-    search || branchId
-      ? getScopedCaseCounts({ branchId, searchFilter })
-      : getCaseCounts(),
+    getCaseCounts(filter),
   ]);
 
   const totalCount = counts.total;
@@ -100,19 +94,19 @@ export const getAllCases = async (query) => {
       caseLength: 0,
       totalCount,
       totalActiveCount,
-      dataLimit,
+      dataLimit: DATA_LIMIT,
     };
   }
 
-  const hasMore = initialCases.length > dataLimit;
+  const hasMore = initialCases.length > DATA_LIMIT;
 
   if (hasMore) initialCases.pop();
   const orderedCases =
     direction === PAGINATION_DIRECTION.PREVIOUS
       ? initialCases.reverse()
       : initialCases;
-  // Same created_by / deleted_by shape as every other case endpoint
-  // (create/update/getById/restore/softDelete).
+  // Same created_by / updated_by / deleted_by shape as every other case
+  // endpoint.
   const finalCases = orderedCases.map(shapeCase);
 
   return {
@@ -120,12 +114,11 @@ export const getAllCases = async (query) => {
     caseFirstId: finalCases[0]?.id,
     caseLastId: finalCases[finalCases.length - 1]?.id,
     hasNextPage: direction === PAGINATION_DIRECTION.NEXT ? hasMore : !!cursorId,
-
     hasPreviousPage:
       direction === PAGINATION_DIRECTION.PREVIOUS ? hasMore : !!cursorId,
     caseLength: finalCases.length,
     totalCount,
     totalActiveCount,
-    dataLimit,
+    dataLimit: DATA_LIMIT,
   };
 };

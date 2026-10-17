@@ -4,6 +4,7 @@ import { userSchema } from "../user.schema.js";
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { getDepartmentById } from "../../departments/services/service.getById.department.js";
 import { getRoleById } from "../../roles/services/service.getById.role.js";
+import { getBusinessTypeById } from "../../business_type/services/service.get.business-typeById.js";
 import { hashPassword } from "../utils/password.util.js";
 import { encrypt, blindIndex } from "../../../utils/encryption.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
@@ -53,6 +54,7 @@ export const createUser = async (req, res) => {
       branch_id,
       department_id,
       role_id,
+      business_type_id,
       address,
     } = parsed.data;
 
@@ -64,10 +66,16 @@ export const createUser = async (req, res) => {
       });
     }
 
-    const [branch, department, role] = await Promise.all([
+    const [branch, department, role, businessType] = await Promise.all([
       getBranchById(branch_id),
       getDepartmentById(department_id),
       getRoleById(role_id),
+      // Scoped to the branch: business types are unique per branch, so another
+      // branch's "national" is a different row, and attaching it would give the
+      // coordinator a scope that matches nothing.
+      business_type_id
+        ? getBusinessTypeById(business_type_id, branch_id)
+        : null,
     ]);
 
     if (
@@ -91,6 +99,14 @@ export const createUser = async (req, res) => {
       })
     )
       return;
+    if (
+      business_type_id &&
+      respondIfInvalidParent(res, businessType, {
+        label: "Business type",
+        action: "assign new users to it",
+      })
+    )
+      return;
 
     const hashedPassword = await hashPassword(password);
 
@@ -109,6 +125,7 @@ export const createUser = async (req, res) => {
         branch_id,
         department_id,
         role_id,
+        business_type_id,
         address,
       },
       historyEntry,

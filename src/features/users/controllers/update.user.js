@@ -1,10 +1,12 @@
 import { getUserById } from "../services/service.getById.user.js";
 import { getUserByEmployeeId } from "../services/service.getByEmployeeId.js";
 import { updateUser as updateUserService } from "../services/service.update.user.js";
+import { respondIfHoldingActiveCases } from "../services/service.checkCaseLoad.user.js";
 import { updateUserSchema } from "../user.schema.js";
 import { getBranchById } from "../../branch/services/service.getById.branch.js";
 import { getDepartmentById } from "../../departments/services/service.getById.department.js";
 import { getRoleById } from "../../roles/services/service.getById.role.js";
+import { getBusinessTypeById } from "../../business_type/services/service.get.business-typeById.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
@@ -66,10 +68,31 @@ export const updateUser = async (req, res, next) => {
       branch_id,
       department_id,
       role_id,
+      business_type_id,
       password,
       confirm_password,
       ...updateData
     } = parsed.data;
+
+    // Both of these would strand cases assigned to this user, so they are
+    // guarded here as well as on the dedicated toggle and soft-delete routes —
+    // otherwise a PUT carrying is_active: false, or a branch move, walks
+    // straight past those checks.
+    //
+    // A branch move also breaks the invariant that a case's employee belongs to
+    // the case's branch: the user would keep seeing their old branch's cases
+    // from a new branch.
+    const deactivating =
+      updateData.is_active === false && existing.is_active === true;
+    const movingBranch =
+      branch_id !== undefined && branch_id !== existing.branch?.id;
+
+    if (deactivating || movingBranch) {
+      const action = deactivating
+        ? "deactivate this user"
+        : "move this user to another branch";
+      if (await respondIfHoldingActiveCases(res, id, action)) return;
+    }
 
     // Only hit the DB for a duplicate if employee_id is actually changing —
     // excludes this user's own row.
@@ -105,11 +128,28 @@ export const updateUser = async (req, res, next) => {
       updateData.aadhaar_number = encrypt(updateData.aadhaar_number);
     }
 
-    const [branch, department, role] = await Promise.all([
+    const [branch, department, role, businessType] = await Promise.all([
       branch_id ? getBranchById(branch_id) : null,
       department_id ? getDepartmentById(department_id) : null,
       role_id ? getRoleById(role_id) : null,
+      // Validated against the branch the user will end up in, not the one they
+      // are in now — business types are unique per branch.
+      business_type_id
+        ? getBusinessTypeById(
+            business_type_id,
+            branch_id ?? existing.branch?.id,
+          )
+        : null,
     ]);
+
+    if (
+      business_type_id &&
+      respondIfInvalidParent(res, businessType, {
+        label: "Business type",
+        action: "assign this user to it",
+      })
+    )
+      return;
 
     if (
       branch_id &&
@@ -144,6 +184,7 @@ export const updateUser = async (req, res, next) => {
         branch_id,
         department_id,
         role_id,
+        business_type_id,
       },
       historyEntry,
       existing,

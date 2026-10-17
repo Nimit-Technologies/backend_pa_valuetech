@@ -19,14 +19,22 @@ model User {
   role_id       String
   address_id    String @unique
 
-  branch     Branch     @relation(fields: [branch_id], references: [id], onDelete: Restrict)
-  department Department @relation(fields: [department_id], references: [id], onDelete: Restrict)
-  role       Role       @relation(fields: [role_id], references: [id], onDelete: Restrict)
-  address    Address    @relation(fields: [address_id], references: [id], onDelete: Restrict)
+  // Which business line a coordinator handles. Coordinators see and manage
+  // only the cases in their own business type; it is null for every other
+  // role, which is why the case scope resolver applies this filter to
+  // coordinators alone.
+  business_type_id String?
+
+  branch        Branch        @relation(fields: [branch_id], references: [id], onDelete: Restrict)
+  department    Department    @relation(fields: [department_id], references: [id], onDelete: Restrict)
+  role          Role          @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  address       Address       @relation(fields: [address_id], references: [id], onDelete: Restrict)
+  business_type BusinessType? @relation(fields: [business_type_id], references: [id], onDelete: Restrict)
 
   remarks       Remark[]
   cases         Case[]   @relation("CaseEmployee")
   created_cases Case[]   @relation("CaseCreatedBy")
+  updated_cases Case[]   @relation("CaseUpdatedBy")
   deleted_cases Case[]   @relation("CaseDeletedBy")
 
   allocations      Allocation[] @relation("AllocationUser")
@@ -43,6 +51,7 @@ model User {
   @@index([branch_id])
   @@index([department_id])
   @@index([role_id])
+  @@index([business_type_id])
   @@index([employee_id])
   @@index([email])
   @@index([phone])

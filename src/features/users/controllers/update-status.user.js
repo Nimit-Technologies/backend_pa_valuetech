@@ -1,5 +1,6 @@
 import { getUserById } from "../services/service.getById.user.js";
 import { setUserStatus } from "../services/service.updateStatus.user.js";
+import { respondIfHoldingActiveCases } from "../services/service.checkCaseLoad.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 import {
@@ -39,6 +40,16 @@ export const updateUserStatus = async (req, res, next) => {
     }
 
     const is_active = !existing.is_active;
+
+    // Deactivating strands any case assigned to this user: they can no longer
+    // log in, nobody else is assigned, and the case drops out of every queue
+    // but the coordinator's without erroring. Reassignment has to come first.
+    if (
+      !is_active &&
+      (await respondIfHoldingActiveCases(res, id, "deactivate this user"))
+    )
+      return;
+
     const historyEntry = createUserHistoryEntry(
       is_active ? "ACTIVATE" : "DEACTIVATE",
       req.user,

@@ -1,5 +1,7 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
 import {
   departmentSelect,
@@ -34,7 +36,6 @@ const getScopedRoleCounts = async ({ branchId, nameFilter } = {}) => {
 };
 
 export const getAllRoles = async (query) => {
-  const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
   const search = String(query.search ?? "").trim();
@@ -49,9 +50,14 @@ export const getAllRoles = async (query) => {
     throw error;
   }
 
-  // Soft-deleted roles stay in the list (same as departments) so the UI can
-  // show them as deleted and offer restore; each row carries `is_deleted`.
-  // The counts below deliberately stay scoped to the non-deleted set.
+  // Soft-deleted roles stay in the list, as they do for departments and
+  // banks: the row is what carries the Restore action, so filtering them out
+  // here is what made restore unreachable from the UI. `is_deleted` is
+  // derived per row by formatRoleResponse, and the table renders a "Deleted"
+  // badge instead of the status toggle for those rows.
+  //
+  // The counts below are a separate query and still pass `deleted_at: null`,
+  // so "Total Roles" keeps meaning live roles rather than rows on screen.
   const filter = {};
   if (branchId) filter.branch_id = branchId;
   let orderBy = { id: "asc" };
@@ -73,7 +79,7 @@ export const getAllRoles = async (query) => {
     prisma.role.findMany({
       where: filter,
       orderBy,
-      take: dataLimit + 1,
+      take: DATA_LIMIT + 1,
       include: {
         department: departmentSelect,
         branch: branchSelect,
@@ -97,11 +103,11 @@ export const getAllRoles = async (query) => {
       roleLength: 0,
       totalCount,
       totalActiveCount,
-      dataLimit,
+      dataLimit: DATA_LIMIT,
     };
   }
 
-  const hasMore = initialRoles.length > dataLimit;
+  const hasMore = initialRoles.length > DATA_LIMIT;
 
   if (hasMore) initialRoles.pop();
   const orderedRoles =
@@ -124,6 +130,6 @@ export const getAllRoles = async (query) => {
     roleLength: finalRoles.length,
     totalCount,
     totalActiveCount,
-    dataLimit,
+    dataLimit: DATA_LIMIT,
   };
 };

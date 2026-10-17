@@ -4,9 +4,13 @@ import { updateStatus as updateStatusService } from "../services/service.update.
 import { updateStatusSchema } from "../status.schema.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { UNIQUE_FIELD_LABELS } from "../../../utils/unique-field-labels.js";
+import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
+import { logAuthEvent } from "../../../utils/audit-log.js";
+import { formatStatusResponse } from "../utils/status-response.js";
 
-export const updateStatus = async (req, res) => {
+export const updateStatus = async (req, res, next) => {
   try {
+    if (respondIfInvalidIdParam(req, res, next)) return;
     const { id } = req.params;
 
     const parsed = updateStatusSchema.safeParse(req.body);
@@ -29,23 +33,34 @@ export const updateStatus = async (req, res) => {
     if (existing.deleted_at) {
       return res.status(409).json({
         success: false,
-        message: "Status is deleted; cannot update a deleted status",
+        message: "Status is deleted; restore it before updating",
       });
     }
 
     const { name } = parsed.data;
     if (name) {
-      const duplicate = await findStatusByName(name);
-      if (duplicate && duplicate.id !== id) {
+      // excludeId so re-sending the row's own name is not a conflict.
+      const duplicate = await findStatusByName(name, id);
+      if (duplicate) {
         return res.status(409).json({
           success: false,
-          message: "Status with this name already exists",
+          message: duplicate.deleted_at
+            ? "A soft-deleted status already uses this name; restore or hard-delete it first"
+            : "Status with this name already exists",
         });
       }
     }
 
     const status = await updateStatusService(id, parsed.data);
-    res.json({ success: true, data: status });
+
+    logAuthEvent("status_updated", {
+      status_id: id,
+      actor_id: req.user?.id ?? null,
+      ip: req.ip,
+      success: true,
+    });
+
+    res.json({ success: true, data: formatStatusResponse(status) });
   } catch (error) {
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);

@@ -24,6 +24,11 @@ export const getUserById = (id, branch_id) => {
       branch: relationSelect,
       department: relationSelect,
       role: relationSelect,
+      // Needed by the update form to pre-select a coordinator's business line;
+      // null for every other role. The list select and the update response
+      // both carry it too, so the shape stays consistent across the three.
+      business_type_id: true,
+      business_type: relationSelect,
       address: true,
       created_at: true,
       updated_at: true,

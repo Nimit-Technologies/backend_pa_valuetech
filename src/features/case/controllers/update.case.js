@@ -3,12 +3,11 @@ import { findCaseByFileNumber } from "../services/service.findByFileNumber.case.
 import { updateCase as updateCaseService } from "../services/service.update.case.js";
 import { getBankById } from "../../banks/services/service.getById.bank.js";
 import { getBusinessTypeById } from "../../business_type/services/service.get.business-typeById.js";
-import { getUserByEmployeeId } from "../../users/services/service.getByEmployeeId.js";
 import { updateCaseSchema } from "../case.schema.js";
 import { getUniqueConstraintField } from "../../../utils/prisma-error.js";
 import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
-import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
-import { resolveBranchScope } from "../../../utils/branch-scope.js";
+import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
+import { resolveCaseScope, CASE_SCOPE } from "../../../utils/case-scope.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 import {
   createCaseIdentitySnapshot,
@@ -19,7 +18,7 @@ import { SCOPED_DUPLICATE_MESSAGES } from "../utils/case-duplicate-messages.js";
 // True if `data` (only the keys the caller actually sent, since
 // updateCaseSchema fields are all optional) would change anything on
 // `existing`. Keeps a no-op PUT from hitting the DB or re-triggering
-// downstream effects (updated_at bump, update-history row, audit log, etc.).
+// downstream effects — the updated_by snapshot, a history row, the audit log.
 const hasChanges = (existing, data) =>
   Object.entries(data).some(([key, value]) => {
     if (key === "address") {
@@ -33,27 +32,11 @@ const hasChanges = (existing, data) =>
 
 export const updateCase = async (req, res, next) => {
   try {
+    if (respondIfInvalidIdParam(req, res, next)) return;
     const { id } = req.params;
-    const isValidId = isValidCuid(id);
-
-    if (!isValidId) {
-      if (!looksLikeAnId(id)) {
-        // Not even shaped like an id — most likely a mistyped/renamed
-        // route falling through to :id. Let Express keep matching so
-        // app.js's catch-all reports the real "Route not found".
-        return next();
-      }
-      return res
-        .status(404)
-        .json({ success: false, message: "Id is not valid" });
-    }
 
     const parsed = updateCaseSchema.safeParse(req.body);
     if (!parsed.success) {
-      console.error(
-        `updateCase validation error for case ${id}:`,
-        JSON.stringify(parsed.error.issues, null, 2),
-      );
       return res.status(400).json({
         success: false,
         message:
@@ -72,11 +55,8 @@ export const updateCase = async (req, res, next) => {
       });
     }
 
-    // Resolved before the DB call so a branch-scoped caller's branch_id is
-    // filtered in the query itself, instead of fetching the case first and
-    // discarding it after if it belongs to another branch.
-    const scope = resolveBranchScope(req);
-    const existing = await getCaseById(id, scope);
+    const scope = resolveCaseScope(req);
+    const existing = await getCaseById(id, scope.where);
     if (!existing) {
       return res
         .status(404)
@@ -90,6 +70,17 @@ export const updateCase = async (req, res, next) => {
       });
     }
 
+    // A closed or cancelled case is a delivered work product: the report has
+    // gone to the bank, and editing it afterwards would leave our record
+    // disagreeing with theirs. Reopening is the way back in, and it is branch
+    // admin only.
+    if (existing.status?.is_terminal) {
+      return res.status(409).json({
+        success: false,
+        message: `Case is ${existing.status.name} and can no longer be edited. Reopen it first.`,
+      });
+    }
+
     if (!hasChanges(existing, parsed.data)) {
       return res.json({ success: true, message: "No changes are found" });
     }
@@ -98,7 +89,6 @@ export const updateCase = async (req, res, next) => {
       file_number,
       bank_id,
       business_type_id,
-      employee_id,
       branch_id: bodyBranchId,
     } = parsed.data;
 
@@ -108,8 +98,17 @@ export const updateCase = async (req, res, next) => {
     const noBusinessTypeChange =
       business_type_id === undefined ||
       business_type_id === existing.business_type_id;
-    const noEmployeeChange =
-      employee_id === undefined || employee_id === existing.employee_id;
+
+    // A coordinator only sees their own business line, so letting them move a
+    // case out of it would hide the case from them permanently with no way to
+    // undo. Branch admin sees every business type in the branch and can move it
+    // back, so the change is theirs to make.
+    if (!noBusinessTypeChange && scope.tier === CASE_SCOPE.BUSINESS_TYPE) {
+      return res.status(403).json({
+        success: false,
+        message: "Only a branch admin can move a case to another business type",
+      });
+    }
 
     // A case's branch always follows the branch of the bank it is filed under,
     // so it is re-derived from the (possibly new) bank rather than trusted from
@@ -135,15 +134,23 @@ export const updateCase = async (req, res, next) => {
     }
 
     const noBranchChange = targetBranchId === existing.branch_id;
-    if (!noBranchChange && scope) {
+    if (!noBranchChange && scope.tier !== CASE_SCOPE.ALL) {
       return res.status(403).json({
         success: false,
         message: "You cannot reassign a case to another branch",
       });
     }
 
+    // Business types are unique per branch, so the new one is looked up scoped
+    // to the branch the case will end up in — another branch's "national" is a
+    // different row, and accepting it would leave the case matching nobody's
+    // scope.
+    let targetBusinessTypeId = existing.business_type_id;
     if (!noBusinessTypeChange) {
-      const businessType = await getBusinessTypeById(business_type_id);
+      const businessType = await getBusinessTypeById(
+        business_type_id,
+        targetBranchId,
+      );
       if (
         respondIfInvalidParent(res, businessType, {
           label: "Business type",
@@ -151,41 +158,20 @@ export const updateCase = async (req, res, next) => {
         })
       )
         return;
+      targetBusinessTypeId = business_type_id;
     }
 
-    // Re-check the assigned employee whenever the employee OR the branch
-    // changes: a case's employee must always belong to the case's branch.
-    if (!noEmployeeChange || !noBranchChange) {
-      const targetEmployeeId = noEmployeeChange
-        ? existing.employee_id
-        : employee_id;
-      const assignedUser = await getUserByEmployeeId(targetEmployeeId);
-      if (
-        respondIfInvalidParent(res, assignedUser, {
-          label: "Employee",
-          action: "assign cases to them",
-        })
-      )
-        return;
-
-      // Raw row from getUserByEmployeeId — branch is the branch_id scalar.
-      if (assignedUser.branch_id !== targetBranchId) {
-        return res.status(409).json({
-          success: false,
-          message: "Assigned employee does not belong to this branch",
-        });
-      }
-    }
-
-    // File numbers are unique per branch, so re-check whenever the file number
-    // OR the branch changes, against the values the row will end up with.
-    if (!noFileNumberChange || !noBranchChange) {
+    // File numbers are unique per branch AND business type, so re-check
+    // whenever any of the three changes, against the values the row will end up
+    // with rather than the ones it has now.
+    if (!noFileNumberChange || !noBranchChange || !noBusinessTypeChange) {
       const targetFileNumber = noFileNumberChange
         ? existing.file_number
         : file_number;
       const duplicate = await findCaseByFileNumber(
         targetFileNumber,
         targetBranchId,
+        targetBusinessTypeId,
       );
       if (duplicate && duplicate.id !== id) {
         return res.status(409).json({
@@ -204,7 +190,7 @@ export const updateCase = async (req, res, next) => {
       data.branch_id = targetBranchId;
     }
 
-    const caseRecord = await updateCaseService(id, data, actor, existing);
+    const caseRecord = await updateCaseService(id, data, actor);
 
     logAuthEvent("case_updated", {
       case_id: id,
@@ -213,13 +199,17 @@ export const updateCase = async (req, res, next) => {
       success: true,
       ...(noBranchChange
         ? {}
-        : {
-            from_branch_id: existing.branch_id,
-            to_branch_id: targetBranchId,
-          }),
+        : { from_branch_id: existing.branch_id, to_branch_id: targetBranchId }),
       ...(noBankChange
         ? {}
         : { from_bank_id: existing.bank_id, to_bank_id: bank_id }),
+      // Logged explicitly: this one changes which coordinators can see the case.
+      ...(noBusinessTypeChange
+        ? {}
+        : {
+            from_business_type_id: existing.business_type_id,
+            to_business_type_id: targetBusinessTypeId,
+          }),
     });
 
     res.json({
@@ -228,8 +218,8 @@ export const updateCase = async (req, res, next) => {
       data: formatCaseResponse(caseRecord),
     });
   } catch (error) {
-    // A concurrent write slipped past the duplicate check above — only
-    // reachable once (file_number, branch_id) is a unique index.
+    // A concurrent write slipped past the duplicate check above; the composite
+    // @@unique is what actually closes the window.
     if (error?.code === "P2002") {
       const field = getUniqueConstraintField(error);
       const scopedMessage = SCOPED_DUPLICATE_MESSAGES[field];

@@ -1,9 +1,23 @@
 model Status {
-  id         String  @id @default(cuid())
-  name       String  @unique
-  is_active  Boolean @default(true)
-  sort_order Int     @default(0)
+  id String @id @default(cuid())
 
+  // Stable machine key. `name` is the editable display label shown in the
+  // dropdown; `code` is what application code branches on, so a rename can
+  // never change behavior. Immutable once set — the update schema omits it.
+  code String @unique
+  name String @unique
+
+  is_active Boolean @default(true)
+
+  // A terminal status ends the case's lifecycle (close / cancelled). Three
+  // places read this rather than hard-coding the codes: the update freeze, the
+  // active-case counts, and the user offboarding guard. A third terminal
+  // status can therefore be added without touching code.
+  is_terminal Boolean @default(false)
+
+  sort_order Int @default(0)
+
+  cases       Case[]
   allocations Allocation[]
 
   created_at DateTime  @default(now())

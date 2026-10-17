@@ -1,20 +1,23 @@
 import prisma from "../../../prisma/client.js";
 import { caseInclude, shapeCase } from "./case.service.helpers.js";
-import { createdBySnapshotFields } from "../utils/case-history.js";
-import { recordCaseTransition } from "../utils/case-count.js";
+import {
+  createdBySnapshotFields,
+  createCaseHistoryEntry,
+} from "../utils/case-history.js";
 
-// `actor` is the identity snapshot of the authenticated user (see
-// createCaseIdentitySnapshot). No CaseUpdateHistory row is written here: that
-// table records *updates*, and the creation itself is already captured by the
-// created_by_* columns and created_at.
-export const createCase = async (data, actor) => {
+// `actor` is the identity snapshot of the authenticated user. `statusId` is
+// resolved by the controller — `open`, or `assigned_to_engineer` when an
+// engineer is named up front.
+//
+// updated_by_* is deliberately left null: creation is not an edit, and a client
+// rendering "last modified by" falls back to created_by.
+export const createCase = async (data, actor, { statusId, statusCode }) => {
   const {
     file_number,
     banker_name,
     customer_name,
     customer_contact_number,
     case_type,
-    is_active,
     business_type_id,
     bank_id,
     branch_id,
@@ -29,17 +32,25 @@ export const createCase = async (data, actor) => {
       customer_name,
       customer_contact_number,
       case_type,
-      is_active,
       business_type: { connect: { id: business_type_id } },
       bank: { connect: { id: bank_id } },
       branch: { connect: { id: branch_id } },
-      employee: { connect: { employee_id } },
+      status: { connect: { id: statusId } },
+      ...(employee_id && { employee: { connect: { employee_id } } }),
       address: { create: address },
       ...createdBySnapshotFields(actor),
+      // Unlike the old behavior, creation does leave a history row: the audit
+      // trail is meant to cover every operation, and `created_by_*` alone
+      // cannot be read back as part of one ordered timeline.
+      update_history: {
+        create: createCaseHistoryEntry(actor, {
+          action: "create",
+          to: statusCode,
+        }),
+      },
     },
     include: caseInclude,
   });
 
-  recordCaseTransition(null, caseRecord);
   return shapeCase(caseRecord);
 };
