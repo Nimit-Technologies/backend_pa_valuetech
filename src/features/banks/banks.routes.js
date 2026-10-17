@@ -12,6 +12,7 @@ import {
   isBranchAdmin,
   isBranchAdminOrCoordinator,
 } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -32,6 +33,12 @@ router.delete(
 );
 router.patch("/status/:id", isAuthenticated, isBranchAdmin, updateBankStatus);
 router.patch("/restore/:id", isAuthenticated, isBranchAdmin, restoreBank);
-router.delete("/delete/:id", isAuthenticated, isBranchAdmin, deleteBank);
+router.delete(
+  "/delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isBranchAdmin,
+  deleteBank,
+);
 
 export default router;

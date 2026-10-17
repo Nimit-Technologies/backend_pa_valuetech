@@ -9,6 +9,7 @@ import { updateDepartmentStatus } from "./controllers/update-status.department.j
 import { restoreDepartment } from "./controllers/restore.department.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
 import { isAdmin, isSuperAdmin } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -21,7 +22,13 @@ router.post(
   createDepartment,
 );
 router.put("/update/:id", isAuthenticated, isSuperAdmin, updateDepartment);
-router.delete("/delete/:id", isAuthenticated, isSuperAdmin, deleteDepartment);
+router.delete(
+  "/delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isSuperAdmin,
+  deleteDepartment,
+);
 router.delete(
   "/soft-delete/:id",
   isAuthenticated,

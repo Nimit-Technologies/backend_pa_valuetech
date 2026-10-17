@@ -4,7 +4,7 @@ import { remarkInclude, shapeRemark } from "./remark.service.helpers.js";
 // Returns the remark with just enough of its case to authorize an edit: the
 // branch it belongs to, and whether its status has frozen the case.
 export const getRemarkById = async (id) => {
-  const remark = await prisma.remark.findUnique({
+  const remark = await prisma.remark.findFirst({
     where: { id },
     include: {
       ...remarkInclude,

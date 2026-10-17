@@ -1,7 +1,7 @@
 import prisma from "../../../prisma/client.js";
 
 export const getUserAuthById = (id) =>
-  prisma.user.findUnique({
+  prisma.user.findFirst({
     where: { id },
     omit: { password: false },
   });

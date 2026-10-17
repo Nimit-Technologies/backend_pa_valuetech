@@ -72,9 +72,14 @@ export const formatRoleResponse = (data) => {
 
     const { history, created_at, updated_at, deleted_at, ...rest } = role;
 
+    // `deleted_at` itself is dev-only, so the client gets the one bit it
+    // needs: whether this row is soft-deleted. The role list returns those
+    // rows, and the table keys its Restore action off this flag.
+    const base = { ...rest, is_deleted: Boolean(deleted_at) };
+
     if (isDev) {
       return {
-        ...rest,
+        ...base,
         history: history ?? [],
         created_at: formatDateTime(created_at),
         updated_at: formatDateTime(updated_at),
@@ -82,7 +87,7 @@ export const formatRoleResponse = (data) => {
       };
     }
 
-    return rest;
+    return base;
   };
 
   if (Array.isArray(data)) {

@@ -18,7 +18,7 @@ export const isAuthenticated = async (req, res, next) => {
       algorithms: ["HS256"],
     });
 
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await prisma.user.findFirst({
       where: { id: decoded.id },
       select: { is_active: true, deleted_at: true, token_version: true },
     });

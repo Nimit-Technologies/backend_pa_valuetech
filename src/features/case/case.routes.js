@@ -13,7 +13,9 @@ import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
 import {
   isBranchAdmin,
   isBranchAdminOrCoordinator,
+  isSuperAdmin,
 } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -59,7 +61,16 @@ router.delete(
 );
 router.patch("/restore/:id", isAuthenticated, isBranchAdmin, restoreCase);
 
-// Development only — unauthenticated hard delete, see the controller.
-router.delete("/developer-delete/:id", developerDeleteCase);
+// Hard delete, kept for local data cleanup. It was previously mounted with no
+// middleware at all, which left an unauthenticated route that could erase any
+// case by id; it now requires a session and super admin on top of the
+// ALLOW_HARD_DELETE opt-in, which is off in production.
+router.delete(
+  "/developer-delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isSuperAdmin,
+  developerDeleteCase,
+);
 
 export default router;

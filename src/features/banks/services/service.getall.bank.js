@@ -1,5 +1,7 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
 import { getBankCounts } from "../utils/bank-count.js";
 
@@ -27,7 +29,6 @@ const getScopedBankCounts = async (where) => {
 };
 
 export const getAllBanks = async (query) => {
-  const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
 
@@ -39,7 +40,15 @@ export const getAllBanks = async (query) => {
     throw error;
   }
 
-  const filter = { deleted_at: null };
+  // Soft-deleted banks stay in the list, as they do for departments: the row
+  // is what carries the Restore action, so filtering them out here is what
+  // made restore unreachable from the UI. `is_deleted` is derived per row by
+  // formatBankResponse, and the table renders a "Deleted" badge instead of the
+  // status toggle for those rows.
+  //
+  // The counts below are a separate query and still pass `deleted_at: null`,
+  // so "Total Banks" keeps meaning live banks rather than rows on screen.
+  const filter = {};
   if (query.branchId) filter.branch_id = query.branchId;
   let orderBy = { id: "asc" };
 
@@ -56,7 +65,7 @@ export const getAllBanks = async (query) => {
     prisma.bank.findMany({
       where: filter,
       orderBy,
-      take: dataLimit + 1,
+      take: DATA_LIMIT + 1,
       omit: { history: OMIT_HISTORY },
     }),
     query.branchId
@@ -77,11 +86,11 @@ export const getAllBanks = async (query) => {
       bankLength: 0,
       totalCount,
       totalActiveCount,
-      dataLimit,
+      dataLimit: DATA_LIMIT,
     };
   }
 
-  const hasMore = initialBanks.length > dataLimit;
+  const hasMore = initialBanks.length > DATA_LIMIT;
 
   if (hasMore) initialBanks.pop();
 
@@ -100,6 +109,6 @@ export const getAllBanks = async (query) => {
     bankLength: finalBanks.length,
     totalCount,
     totalActiveCount,
-    dataLimit,
+    dataLimit: DATA_LIMIT,
   };
 };

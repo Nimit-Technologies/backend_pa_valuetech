@@ -1,10 +1,13 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
+import {
+  DEFAULT_DATA_LIMIT,
+  resolveDataLimit,
+} from "../../../constant/pagination.js";
 
 // Page size for the similar-case search. The client never asks for one: the
 // form is not where paging policy belongs, and a client-chosen limit is one
 // more thing to validate on every request. DATA_LIMIT governs, exactly as it
 // does for the case list, and "Load more" walks forward with `offset`.
-export const DEFAULT_PAGE_SIZE = 10;
+export const DEFAULT_PAGE_SIZE = DEFAULT_DATA_LIMIT;
 
 // A ceiling on what DATA_LIMIT may ask for here. This search is run while a
 // form is being filled, so a misconfigured env should not turn every keystroke
@@ -16,16 +19,12 @@ export const MAX_PAGE_SIZE = 50;
 // narrower address, not another page.
 export const MAX_OFFSET = 500;
 
-// getAllCases reads DATA_LIMIT with a bare parseInt, which yields NaN when the
-// env is unset — `take: NaN + 1` only survives there because the deployment
-// always sets it. This one falls back instead.
-export const resolvePageSize = () => {
-  const parsed = Number.parseInt(`${CREDENTIALS.DATA_LIMIT}`, 10);
-
-  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_PAGE_SIZE;
-
-  return Math.min(parsed, MAX_PAGE_SIZE);
-};
+// resolveDataLimit() owns the parse and the fallback, so the only thing left
+// here is this search's own ceiling. Called per request rather than bound to
+// the shared DATA_LIMIT constant, since the clamp makes this a different value
+// from the one the lists page with.
+export const resolvePageSize = () =>
+  Math.min(resolveDataLimit(), MAX_PAGE_SIZE);
 
 // Stored numbers are exactly 10 digits — the zod schema enforces that on every
 // write path — so the only work here is making the *input* forgiving. A user

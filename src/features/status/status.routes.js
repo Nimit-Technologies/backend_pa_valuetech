@@ -8,6 +8,7 @@ import { softDeleteStatus } from "./controllers/softDelete.status.js";
 import { restoreStatus } from "./controllers/restore.status.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
 import { isSuperAdmin } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -28,6 +29,12 @@ router.delete(
   softDeleteStatus,
 );
 router.patch("/restore/:id", isAuthenticated, isSuperAdmin, restoreStatus);
-router.delete("/delete/:id", isAuthenticated, isSuperAdmin, deleteStatus);
+router.delete(
+  "/delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isSuperAdmin,
+  deleteStatus,
+);
 
 export default router;

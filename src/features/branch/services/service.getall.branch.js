@@ -1,16 +1,11 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
 import { getBranchCounts } from "../utils/branch-count.js";
 
 const VALID_DIRECTIONS = Object.values(PAGINATION_DIRECTION);
-
-const DEFAULT_DATA_LIMIT = 10;
-const parsedDataLimit = parseInt(CREDENTIALS.DATA_LIMIT, 10);
-const DATA_LIMIT =
-  Number.isInteger(parsedDataLimit) && parsedDataLimit > 0
-    ? parsedDataLimit
-    : DEFAULT_DATA_LIMIT;
 
 const OMIT_HISTORY = process.env.NODE_ENV !== "development";
 

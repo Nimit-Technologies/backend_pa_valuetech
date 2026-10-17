@@ -8,54 +8,53 @@ import { softDeleteBusinessType } from "./controllers/softDelete.business-type.j
 import { updateBusinessTypeStatus } from "./controllers/update-status.business-type.js";
 import { restoreBusinessType } from "./controllers/restore.business-type.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
-import {
-  isBranchAdminOrCoordinator,
-  isBranchAdmin,
-} from "../../middlewares/authorize.js";
+import { isSuperAdmin } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
 router.get(
   "/all-business-types",
   isAuthenticated,
-  isBranchAdminOrCoordinator,
+
   getAllBusinessTypes,
 );
 
-router.get("/:id", isAuthenticated, isBranchAdmin, getBusinessTypeById);
+router.get("/:id", isAuthenticated, getBusinessTypeById);
 
 router.post(
   "/create-business-type",
   isAuthenticated,
-  isBranchAdmin,
+  isSuperAdmin,
   createBusinessType,
 );
-router.put("/update/:id", isAuthenticated, isBranchAdmin, updateBusinessType);
+router.put("/update/:id", isAuthenticated, isSuperAdmin, updateBusinessType);
 
 router.delete(
   "/soft-delete/:id",
   isAuthenticated,
-  isBranchAdmin,
+  isSuperAdmin,
   softDeleteBusinessType,
 );
 
 router.patch(
   "/status/:id",
   isAuthenticated,
-  isBranchAdmin,
+  isSuperAdmin,
   updateBusinessTypeStatus,
 );
 router.patch(
   "/restore/:id",
   isAuthenticated,
-  isBranchAdmin,
+  isSuperAdmin,
   restoreBusinessType,
 );
 
 router.delete(
   "/delete/:id",
   isAuthenticated,
-  isBranchAdmin,
+  isHardDeleteAllowed,
+  isSuperAdmin,
   deleteBusinessType,
 );
 

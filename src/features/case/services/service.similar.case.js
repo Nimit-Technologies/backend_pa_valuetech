@@ -12,6 +12,15 @@ import { resolvePageSize, shapeSimilarCase } from "../utils/case-similarity.js";
 // expressed in a Prisma `orderBy`. Every value is still a bound parameter —
 // there is no string concatenation of user input anywhere below.
 //
+// This is a deliberate, reviewed exception to the "no raw SQL on tenant
+// tables" rule (CLAUDE.md §4.6). That rule exists because raw SQL can slip
+// past row scoping; here the scoping is in the WHERE clause below and fails
+// closed — a caller with no branch resolves to a sentinel that matches no row
+// (see resolveCaseScope), and `c.deleted_at IS NULL` keeps soft deletes out.
+// Do not "fix" this by moving it to the query API: similarity() would have to
+// become `similarity(a, b) >= threshold`, which ignores the GIN index and
+// degrades to a sequential scan computing a similarity for every row.
+//
 // The two statements run in one interactive transaction because they must land
 // on the same pooled connection: set_limit() configures the threshold that the
 // `%` operator in the second statement reads.

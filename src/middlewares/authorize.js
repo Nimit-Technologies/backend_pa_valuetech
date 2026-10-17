@@ -49,6 +49,16 @@ export const isBranchAdmin = (req, res, next) => {
   return deny(res);
 };
 
+// Reading *someone else's* row stays admin-only; reading your own never was an
+// admin action. The self-service profile pages (view profile / manage profile)
+// are the only reason a coordinator or engineer calls GET /user/:id, and they
+// only ever pass their own id. This widens nothing else: a non-admin still
+// cannot name another id, and the branch scope in the controller still applies.
+export const isAdminOrSelf = (req, res, next) => {
+  if (req.params?.id && req.params.id === req.user?.id) return next();
+  return isAdmin(req, res, next);
+};
+
 // Coordinator must have role "coordinator" AND belong to "coordination" department
 const isCoordinatorUser = (req) =>
   hasRole(req, ROLE.CORDINATOR) && hasDepartment(req, DEPARTMENT.CORDINATION);

@@ -18,8 +18,33 @@ export const bankSelect = {
   },
 };
 
+// `phone` rides along because the assigned engineer is someone the branch
+// staff ring up from the case itself; the detail view shows it beside the name.
 export const employeeSelect = {
-  select: { id: true, first_name: true, last_name: true, employee_id: true },
+  select: {
+    id: true,
+    first_name: true,
+    last_name: true,
+    employee_id: true,
+    phone: true,
+  },
+};
+
+// The list view shows the property address in a column, so the relation rides
+// along — but through an explicit select rather than `address: true`, which
+// would also ship `search_text`: a long derived string the trigram search uses
+// and no client has any reason to read.
+export const addressListSelect = {
+  select: {
+    id: true,
+    lane: true,
+    landmark: true,
+    city: true,
+    district: true,
+    state: true,
+    pin_code: true,
+    country: true,
+  },
 };
 
 const updateHistorySelect = {
@@ -78,14 +103,17 @@ export const caseDetailInclude = {
   remarks: remarkPreview,
 };
 
-// The list view leaves out address and update_history: one page can hold many
-// cases, and neither is needed to render a row. Both come back on getById.
+// The list view leaves out update_history and remarks: one page can hold many
+// cases and neither is needed to render a row — both come back on getById. The
+// address is included, trimmed to its displayable columns, because the list
+// table shows it per row.
 export const caseListInclude = {
   branch: branchSelect,
   bank: bankSelect,
   business_type: businessTypeSelect,
   status: statusSelect,
   employee: employeeSelect,
+  address: addressListSelect,
 };
 
 // Collapses the flat snapshot columns into created_by / updated_by / deleted_by

@@ -19,14 +19,12 @@ export const findCaseByFileNumber = (
   branch_id,
   business_type_id,
 ) => {
-  return prisma.case.findUnique({
-    where: {
-      branch_id_business_type_id_file_number: {
-        branch_id,
-        business_type_id,
-        file_number,
-      },
-    },
+  // findFirst with the three fields flat rather than findUnique on the
+  // composite key: the @@unique still guarantees at most one match, and a
+  // filter-based lookup is what any future branch-scoping Prisma extension can
+  // extend — findUnique silently ignores injected filters.
+  return prisma.case.findFirst({
+    where: { branch_id, business_type_id, file_number },
     select: { id: true, file_number: true, deleted_at: true },
   });
 };

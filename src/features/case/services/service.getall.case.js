@@ -1,5 +1,7 @@
-import { CREDENTIALS } from "../../../constant/credentials.js";
-import { PAGINATION_DIRECTION } from "../../../constant/pagination.js";
+import {
+  DATA_LIMIT,
+  PAGINATION_DIRECTION,
+} from "../../../constant/pagination.js";
 import prisma from "../../../prisma/client.js";
 import { caseListInclude, shapeCase } from "./case.service.helpers.js";
 import { getCaseCounts } from "../utils/case-count.js";
@@ -28,7 +30,6 @@ const buildSearchFilter = (search) => {
 // separate endpoint per role. `includeFinished` governs whether terminal cases
 // appear at all, so a day-to-day queue is not buried under closed work.
 export const getAllCases = async (query) => {
-  const dataLimit = parseInt(`${CREDENTIALS.DATA_LIMIT}`);
   const direction = String(query.direction || PAGINATION_DIRECTION.NEXT);
   const cursorId = String(query.cursorId || "");
   const search = String(query.search ?? "").trim();
@@ -74,7 +75,7 @@ export const getAllCases = async (query) => {
     prisma.case.findMany({
       where: paginatedFilter,
       orderBy,
-      take: dataLimit + 1,
+      take: DATA_LIMIT + 1,
       include: caseListInclude,
     }),
     getCaseCounts(filter),
@@ -93,11 +94,11 @@ export const getAllCases = async (query) => {
       caseLength: 0,
       totalCount,
       totalActiveCount,
-      dataLimit,
+      dataLimit: DATA_LIMIT,
     };
   }
 
-  const hasMore = initialCases.length > dataLimit;
+  const hasMore = initialCases.length > DATA_LIMIT;
 
   if (hasMore) initialCases.pop();
   const orderedCases =
@@ -118,6 +119,6 @@ export const getAllCases = async (query) => {
     caseLength: finalCases.length,
     totalCount,
     totalActiveCount,
-    dataLimit,
+    dataLimit: DATA_LIMIT,
   };
 };

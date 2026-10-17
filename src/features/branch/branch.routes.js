@@ -9,6 +9,7 @@ import { updateBranchStatus } from "./controllers/update-status.branch.js";
 import { restoreBranch } from "./controllers/restore.branch.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
 import { isSuperAdmin } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -16,7 +17,13 @@ router.get("/all-branch", isAuthenticated, isSuperAdmin, getAllBranches);
 router.get("/:id", isAuthenticated, isSuperAdmin, getBranchById);
 router.post("/create-branch", isAuthenticated, isSuperAdmin, createBranch);
 router.put("/update/:id", isAuthenticated, isSuperAdmin, updateBranch);
-router.delete("/delete/:id", isAuthenticated, isSuperAdmin, deleteBranch);
+router.delete(
+  "/delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isSuperAdmin,
+  deleteBranch,
+);
 router.delete(
   "/soft-delete/:id",
   isAuthenticated,

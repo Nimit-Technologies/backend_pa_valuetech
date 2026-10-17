@@ -6,6 +6,7 @@ import { updateAddress } from "./controllers/update.address.js";
 import { deleteAddress } from "./controllers/delete.address.js";
 import { isAuthenticated } from "../../middlewares/isAuthenticated.js";
 import { isAdmin } from "../../middlewares/authorize.js";
+import { isHardDeleteAllowed } from "../../middlewares/isHardDeleteAllowed.js";
 
 const router = Router();
 
@@ -13,6 +14,12 @@ router.get("/all-address", isAuthenticated, isAdmin, getAllAddresses);
 router.get("/:id", isAuthenticated, isAdmin, getAddressById);
 router.post("/create-address", isAuthenticated, isAdmin, createAddress);
 router.put("/update/:id", isAuthenticated, isAdmin, updateAddress);
-router.delete("/delete/:id", isAuthenticated, isAdmin, deleteAddress);
+router.delete(
+  "/delete/:id",
+  isAuthenticated,
+  isHardDeleteAllowed,
+  isAdmin,
+  deleteAddress,
+);
 
 export default router;
