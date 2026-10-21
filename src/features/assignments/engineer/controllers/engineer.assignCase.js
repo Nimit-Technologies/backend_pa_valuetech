@@ -1,22 +1,22 @@
-import { getCaseById } from "../services/service.getById.case.js";
-import { assignCase as assignCaseService } from "../services/service.assign.case.js";
-import { getUserByEmployeeId } from "../../users/services/service.getByEmployeeId.js";
-import { findStatusByCode } from "../../status/services/service.getStatusByCode.js";
-import { assignCaseSchema } from "../case.schema.js";
-import { respondIfInvalidParent } from "../../../utils/validate-parent-entity.js";
-import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
-import { resolveCaseScope } from "../../../utils/case-scope.js";
-import { logAuthEvent } from "../../../utils/audit-log.js";
-import { STATUS_CODE } from "../../../constant/case-status.js";
+import { getCaseById } from "../../../case/services/service.getById.case.js";
+import { assignCase as assignCaseService } from "../services/service.assignCase.js";
+import { getUserByEmployeeId } from "../../../users/services/service.getByEmployeeId.js";
+import { findStatusByCode } from "../../../status/services/service.getStatusByCode.js";
+import { assignCaseSchema } from "../../../case/case.schema.js";
+import { respondIfInvalidParent } from "../../../../utils/validate-parent-entity.js";
+import { respondIfInvalidIdParam } from "../../../../utils/validate-id-param.js";
+import { resolveCaseScope } from "../../../../utils/case-scope.js";
+import { logAuthEvent } from "../../../../utils/audit-log.js";
+import { STATUS_CODE } from "../../../../constant/case-status.js";
 import {
   createCaseIdentitySnapshot,
   formatCaseResponse,
-} from "../utils/case-history.js";
+} from "../../../case/utils/case-history.js";
 
 // Assignment has its own endpoint rather than riding on the generic update: it
 // advances the status, and it changes who can see the case at all. Burying that
 // in a field write would make both effects invisible in the audit trail.
-export const assignCase = async (req, res, next) => {
+export const engineerAssignCase = async (req, res, next) => {
   try {
     if (respondIfInvalidIdParam(req, res, next)) return;
     const { id } = req.params;

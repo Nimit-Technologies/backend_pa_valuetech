@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getAllUsers } from "./controllers/getall.user.js";
+import { getAllEngineers } from "./controllers/getall.engineer.js";
 import { getUserById } from "./controllers/get.userById.js";
 import { createUser } from "./controllers/create.user.js";
 import { updateUser } from "./controllers/update.user.js";
@@ -31,6 +32,9 @@ router.post("/reset-password", passwordResetLimiter, resetPassword);
 router.post("/aadhaar", isAuthenticated, getOriginalAadhaar);
 
 router.get("/all-user", isAuthenticated, isAdmin, getAllUsers);
+
+router.get("/all-engineer", isAuthenticated, getAllEngineers);
+
 router.get("/:id", isAuthenticated, isAdminOrSelf, getUserById);
 router.post("/create-user", isAuthenticated, isSuperAdmin, createUser);
 router.put("/update/:id", isAuthenticated, isSuperAdmin, updateUser);

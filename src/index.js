@@ -11,6 +11,7 @@ import dashboardRoutes from "./features/dashboard/dashboard.routes.js";
 import businessRoutes from "./features/business_type/business-type.routes.js";
 import statusRoutes from "./features/status/status.routes.js";
 import remarkRoutes from "./features/remark/remark.routes.js";
+import engineerRoutes from "./features/engineer/engineer.routes.js";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/dashboard", dashboardRoutes);
 router.use("/business", businessRoutes);
 router.use("/status", statusRoutes);
 router.use("/remark", remarkRoutes);
+router.use("/engineer", engineerRoutes);
 
 export default router;

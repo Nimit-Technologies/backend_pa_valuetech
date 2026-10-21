@@ -4,7 +4,7 @@ import { getCaseById } from "./controllers/get.caseById.js";
 import { createCase } from "./controllers/create.case.js";
 import { getSimilarCases } from "./controllers/similar.case.js";
 import { updateCase } from "./controllers/update.case.js";
-import { assignCase } from "./controllers/assign.case.js";
+import { engineerAssignCase } from "../assignments/engineer/controllers/engineer.assignCase.js";
 import { transitionCase } from "./controllers/transition.case.js";
 import { softDeleteCase } from "./controllers/softDelete.case.js";
 import { restoreCase } from "./controllers/restore.case.js";
@@ -48,7 +48,7 @@ router.patch(
   "/assign/:id",
   isAuthenticated,
   isBranchAdminOrCoordinator,
-  assignCase,
+  engineerAssignCase,
 );
 
 router.patch("/status/:id", isAuthenticated, transitionCase);

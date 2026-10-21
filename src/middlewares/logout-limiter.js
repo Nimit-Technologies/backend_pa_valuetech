@@ -1,12 +1,12 @@
 import rateLimit from "express-rate-limit";
 
 export const logoutLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
+  windowMs: 1 * 60 * 1000,
+  limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    message: "Too many logout requests. Please try again later.",
+    message: "Too many session requests. Please try again later.",
   },
 });

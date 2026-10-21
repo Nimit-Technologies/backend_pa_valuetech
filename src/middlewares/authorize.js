@@ -1,3 +1,8 @@
+import {
+  ENGINEER_ROLE_NAME,
+  TECHNICAL_DEPARTMENT_NAME,
+} from "../constant/user-directory.js";
+
 export const ROLE = {
   SUPER_ADMIN: "super admin",
   BRANCH_ADMIN: "branch admin",
@@ -72,5 +77,23 @@ export const isCoordinator = (req, res, next) => {
 
 export const isBranchAdminOrCoordinator = (req, res, next) => {
   if (hasRole(req, ROLE.BRANCH_ADMIN) || isCoordinatorUser(req)) return next();
+  return deny(res);
+};
+
+// Engineer must have role "engineer" AND belong to the "technical" department,
+// mirroring isCoordinatorUser above.
+//
+// Both names come from constant/user-directory.js, which is what the engineer
+// directory (GET /user/all-engineer) already matches on. Note this file's own
+// private DEPARTMENT.TECHNICAL reads "engineer" and does NOT match the seeded
+// department, so it is deliberately not used here.
+const isEngineerUser = (req) =>
+  hasRole(req, ENGINEER_ROLE_NAME) &&
+  hasDepartment(req, TECHNICAL_DEPARTMENT_NAME);
+
+export const isEngineerRole = isEngineerUser;
+
+export const isEngineer = (req, res, next) => {
+  if (isEngineerUser(req)) return next();
   return deny(res);
 };

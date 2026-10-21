@@ -1,9 +1,12 @@
-import prisma from "../../../prisma/client.js";
-import { caseInclude, shapeCase } from "./case.service.helpers.js";
+import prisma from "../../../../prisma/client.js";
+import {
+  caseInclude,
+  shapeCase,
+} from "../../../case/services/case.service.helpers.js";
 import {
   createCaseHistoryEntry,
   updatedBySnapshotFields,
-} from "../utils/case-history.js";
+} from "../../../case/utils/case-history.js";
 
 // Assigns or reassigns the engineer.
 //
