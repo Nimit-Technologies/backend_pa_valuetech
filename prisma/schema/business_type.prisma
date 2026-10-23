@@ -17,9 +17,6 @@ model BusinessType {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  // Names are lowercased by the zod schema before they are written, so this
-  // behaves case-insensitively. It also serves the lookups on `name` alone
-  // that the old separate index covered.
   @@unique([name, branch_id])
   @@index([branch_id])
   @@map("business_types")

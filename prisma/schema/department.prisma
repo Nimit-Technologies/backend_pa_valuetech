@@ -1,7 +1,6 @@
 model Department {
-  id         String    @id @default(cuid())
-  // Unique per branch, not globally: "sales" may exist in both "lucknow"
-  // and "delhi". See @@unique below.
+  id String @id @default(cuid())
+
   name       String
   is_active  Boolean   @default(true)
   branch_id  String
@@ -14,9 +13,6 @@ model Department {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  // Names are lowercased by the zod schema before they are written, so this
-  // behaves case-insensitively. It also serves the (name, branch_id)
-  // lookups the old separate index covered.
   @@unique([name, branch_id])
   @@index([branch_id])
   @@map("departments")

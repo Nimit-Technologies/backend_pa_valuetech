@@ -10,16 +10,16 @@ model Case {
   id String @id @default(cuid())
 
   file_number             String
-  banker_name             String
   customer_name           String
   customer_contact_number String
-  case_type               String 
+  case_type               String
+  banker_name             String
 
   business_type_id String
 
   bank_id       String
-  branch_id     String 
-  status_id     String 
+  branch_id     String
+  status_id     String
   address_id    String
   created_by_id String
   employee_id   String?
@@ -58,9 +58,10 @@ model Case {
   closed_at           DateTime?
   cancellation_reason CancellationReason?
 
-  update_history CaseUpdateHistory[]
-  remarks        Remark[]
-  allocations    Allocation[]
+  update_history     CaseUpdateHistory[]
+  remarks            Remark[]
+  allocations        Allocation[]
+  site_visit_reports SiteVisitReport[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -75,9 +76,6 @@ model Case {
   @@index([deleted_by_id])
   @@index([business_type_id])
   @@index([bank_id])
-  // Exact-match lookups from the similar-case search. Stored values are
-  // already normalized to exactly 10 digits by the zod schema on every write
-  // path, so no separate normalized column is needed.
   @@index([customer_contact_number])
   @@map("cases")
 }

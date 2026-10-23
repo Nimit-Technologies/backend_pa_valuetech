@@ -22,9 +22,6 @@ const router = Router();
 router.get("/all-case", isAuthenticated, getAllCases);
 router.get("/:id", isAuthenticated, getCaseById);
 
-// Read-only, but a POST: the address it searches on is a seven-field object,
-// which does not belong in a query string. The "/:id" route above is a GET, so
-// there is nothing for this literal path to be shadowed by.
 router.post(
   "/similar",
   isAuthenticated,
@@ -61,10 +58,6 @@ router.delete(
 );
 router.patch("/restore/:id", isAuthenticated, isBranchAdmin, restoreCase);
 
-// Hard delete, kept for local data cleanup. It was previously mounted with no
-// middleware at all, which left an unauthenticated route that could erase any
-// case by id; it now requires a session and super admin on top of the
-// ALLOW_HARD_DELETE opt-in, which is off in production.
 router.delete(
   "/developer-delete/:id",
   isAuthenticated,

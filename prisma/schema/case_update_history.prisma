@@ -1,6 +1,3 @@
-// What happened to the case. A fixed, code-owned set — unlike Status, which is
-// business vocabulary curated through the API, this drives branching and must
-// never be renamed underneath the code that reads it.
 enum CaseAuditAction {
   create
   update
@@ -11,38 +8,22 @@ enum CaseAuditAction {
   restore
 }
 
-// One append-only row per operation on a case: data edits and status
-// transitions share this table so the case timeline is a single ordered query.
-// A reassigned engineer needs to read everything that happened before them, and
-// merging two result sets in application code costs more than the few nullable
-// columns a shared table needs.
 model CaseUpdateHistory {
   id String @id @default(cuid())
 
   case_id       String
   updated_by_id String
 
-  // Restrict on both sides is what makes this an audit trail: a case cannot be
-  // hard-deleted while its history exists, and neither can an acting user.
   case       Case @relation(fields: [case_id], references: [id], onDelete: Restrict)
   updated_by User @relation(fields: [updated_by_id], references: [id], onDelete: Restrict)
 
   action CaseAuditAction
 
-  // Status codes, not foreign keys — snapshotted the same way the actor's
-  // identity below is. The row must keep reading correctly even if a status is
-  // later renamed or removed, and an audit log should not be able to block
-  // housekeeping on the Status table.
   from_status String?
   to_status   String?
 
-  // Why a backward or terminal move was made: revisit, rework, reopen, or the
-  // narrative behind a cancellation. Immutable, unlike a remark, so the stated
-  // reason cannot be rewritten after the fact.
   reason String?
 
-  // Snapshot of the actor's identity at the moment of this operation.
-  // Immutable audit trail: must not change if the user/role/department is later edited.
   first_name  String
   employee_id String
   role        String

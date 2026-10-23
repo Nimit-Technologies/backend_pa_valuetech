@@ -3,6 +3,7 @@ import { myTaskQuerySchema } from "../engineer.schema.js";
 
 const resolveActor = (req) => ({
   userId: req.user?.id,
+  employeeId: req.user?.employee_id,
   branchId: req.user?.branch?.id,
 });
 
@@ -13,8 +14,10 @@ const SESSION_EXPIRED = {
 
 export const getMyTasks = async (req, res) => {
   try {
-    const { userId, branchId } = resolveActor(req);
-    if (!userId || !branchId) return res.status(401).json(SESSION_EXPIRED);
+    const { userId, employeeId, branchId } = resolveActor(req);
+    if (!userId || !employeeId || !branchId) {
+      return res.status(401).json(SESSION_EXPIRED);
+    }
 
     const parsed = myTaskQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -38,6 +41,7 @@ export const getMyTasks = async (req, res) => {
     } = await listMyTasks({
       userId,
       branchId,
+      employeeId,
       direction,
       cursorId,
       search,

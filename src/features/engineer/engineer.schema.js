@@ -30,3 +30,7 @@ export const myTaskQuerySchema = z.object({
     .transform((value) => value.toLowerCase())
     .optional(),
 });
+
+export const mySubmittedReportsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+});

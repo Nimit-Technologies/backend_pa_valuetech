@@ -3,6 +3,7 @@ import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
 
 const resolveActor = (req) => ({
   userId: req.user?.id,
+  employeeId: req.user?.employee_id,
   branchId: req.user?.branch?.id,
 });
 
@@ -15,12 +16,15 @@ export const getMyTaskById = async (req, res, next) => {
   try {
     if (respondIfInvalidIdParam(req, res, next)) return;
 
-    const { userId, branchId } = resolveActor(req);
-    if (!userId || !branchId) return res.status(401).json(SESSION_EXPIRED);
+    const { userId, employeeId, branchId } = resolveActor(req);
+    if (!userId || !employeeId || !branchId) {
+      return res.status(401).json(SESSION_EXPIRED);
+    }
 
     const task = await findMyTask({
       userId,
       branchId,
+      employeeId,
       caseId: req.params.id,
     });
 

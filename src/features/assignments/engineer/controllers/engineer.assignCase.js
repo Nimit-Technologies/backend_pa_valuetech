@@ -112,13 +112,26 @@ export const engineerAssignCase = async (req, res, next) => {
       id,
       {
         employee_id,
-        statusId: nextStatus?.id,
+        employeeUserId: assignedUser.id,
+        roleId: assignedUser.role_id,
+        statusId: nextStatus?.id ?? existing.status?.id,
+        businessTypeId: existing.business_type_id,
+        branchId: existing.branch_id,
+        previousEmployeeId: existing.employee_id,
+        expectedStatusId: existing.status?.id,
         statusCode: nextStatus?.code,
         previousStatusCode: existing.status?.code,
         isReassignment,
       },
       actor,
     );
+
+    if (!caseRecord) {
+      return res.status(409).json({
+        success: false,
+        message: "Case changed while assigning. Refresh and try again.",
+      });
+    }
 
     logAuthEvent(isReassignment ? "case_reassigned" : "case_assigned", {
       case_id: id,

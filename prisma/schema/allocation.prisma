@@ -5,13 +5,11 @@ model Allocation {
   user_id String
   role_id String
 
-  status_id        String
-  business_type_id String
+  status_id         String
+  business_type_id  String
+  engineer_sheet_id String
+  allocated_by_id   String
 
-  allocated_by_id String
-
-  // Explicit stage order within the case's workflow (e.g. 1 = Engineer, 2 = Drafter, 3 = Appraiser).
-  // Do not rely on allocated_at for ordering — it's ambiguous under same-millisecond inserts.
   sequence Int
 
   case          Case         @relation(fields: [case_id], references: [id], onDelete: Restrict)
@@ -20,7 +18,8 @@ model Allocation {
   status        Status       @relation(fields: [status_id], references: [id], onDelete: Restrict)
   business_type BusinessType @relation(fields: [business_type_id], references: [id], onDelete: Restrict)
 
-  allocated_by User @relation("AllocationAllocatedBy", fields: [allocated_by_id], references: [id], onDelete: Restrict)
+  allocated_by      User             @relation("AllocationAllocatedBy", fields: [allocated_by_id], references: [id], onDelete: Restrict)
+  site_visit_report SiteVisitReport?
 
   // Snapshot of the assigner's identity at the moment the allocation was made.
   // Immutable audit trail: must not change if the user/role/department is later edited.

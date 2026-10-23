@@ -18,8 +18,12 @@ const buildCaseSearchFilter = (search) => {
   };
 };
 
-const buildCaseFilter = ({ branchId, search, statusCode }) => {
-  const caseFilter = { deleted_at: null, branch_id: branchId };
+const buildCaseFilter = ({ branchId, employeeId, search, statusCode }) => {
+  const caseFilter = {
+    deleted_at: null,
+    branch_id: branchId,
+    employee_id: employeeId,
+  };
 
   if (statusCode) caseFilter.status = { code: statusCode };
 
@@ -53,12 +57,18 @@ const buildPaginationQuery = ({ filter, cursorId, direction }) => {
 export const listMyTasks = async ({
   userId,
   branchId,
+  employeeId,
   direction,
   cursorId,
   search,
   statusCode,
 }) => {
-  const caseFilter = buildCaseFilter({ branchId, search, statusCode });
+  const caseFilter = buildCaseFilter({
+    branchId,
+    employeeId,
+    search,
+    statusCode,
+  });
   const filter = buildTaskFilter(userId, caseFilter);
   const { where, orderBy } = buildPaginationQuery({
     filter,

@@ -37,8 +37,9 @@ model User {
   updated_cases Case[]   @relation("CaseUpdatedBy")
   deleted_cases Case[]   @relation("CaseDeletedBy")
 
-  allocations      Allocation[] @relation("AllocationUser")
-  allocations_made Allocation[] @relation("AllocationAllocatedBy")
+  allocations        Allocation[]      @relation("AllocationUser")
+  allocations_made   Allocation[]      @relation("AllocationAllocatedBy")
+  site_visit_reports SiteVisitReport[]
 
   password_reset_tokens PasswordResetToken[]
 

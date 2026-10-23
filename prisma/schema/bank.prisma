@@ -1,9 +1,6 @@
 model Bank {
-  id               String  @id @default(cuid())
-  // name, bank_branch_code and gst_number are each unique per branch, not
-  // globally: the same bank/branch-code/GST number may exist under a
-  // different branch, just not twice within the same one. See @@unique
-  // below.
+  id String @id @default(cuid())
+
   name             String
   display_name     String
   bank_branch      String
@@ -23,10 +20,6 @@ model Bank {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  // Names/codes/GST numbers are normalized (lowercased/uppercased) by the
-  // zod schema before they are written, so these behave case-insensitively.
-  // Each composite index also serves lookups on its leading column alone,
-  // so no separate single-column index is needed for any of them.
   @@unique([name, branch_id])
   @@unique([bank_branch_code, branch_id])
   @@unique([gst_number, branch_id])

@@ -1,28 +1,13 @@
 model Address {
-  id         String    @id @default(cuid())
-  lane       String?
-  landmark   String?
-  city       String
-  district   String
-  state      String
-  pin_code   String
-  country    String    @default("India")
+  id       String  @id @default(cuid())
+  lane     String?
+  landmark String?
+  city     String
+  district String
+  state    String
+  pin_code String
+  country  String  @default("India")
 
-  // All seven components above, lower-cased, stripped of punctuation and
-  // collapsed to single spaces — the string the case similarity search runs
-  // trigram matching against.
-  //
-  // Derived, never written by the application. A BEFORE INSERT OR UPDATE
-  // trigger keeps it in sync by calling case_address_search_text(), which is
-  // also what the search query applies to its own input, so the stored string
-  // and the query string can never drift apart. The trigger rather than
-  // application code because addresses are written from three places: the
-  // nested create in service.create.case.js, the nested update in
-  // service.update.case.js, and PUT /address/update/:id, which edits a row
-  // directly with the case services bypassed.
-  //
-  // Nullable because the User and Bank rows sharing this table have no reason
-  // to carry one; the trigger populates it for them anyway.
   search_text String?
 
   user       User?
@@ -32,8 +17,6 @@ model Address {
   deleted_at DateTime?
   cases      Case[]
 
-  // Declared here rather than only in the migration SQL: an index Prisma does
-  // not know about is drift, and the next `migrate dev` would drop it.
   @@index([search_text(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("addresses")
 }

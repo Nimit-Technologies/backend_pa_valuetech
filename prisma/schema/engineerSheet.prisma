@@ -1,0 +1,245 @@
+enum LocalityType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  AGRICULTURAL
+  OTHER // shows a free-text input in the UI
+}
+
+enum ColonyType {
+  AUTHORIZED
+  UNAUTHORIZED
+  MCD
+  NDMC
+  GDA
+  MCPL_PROPERTY
+  REGULARIZED
+  GRAM_PANCHAYAT
+  OTHER // shows a free-text input in the UI
+}
+
+enum OwnershipType {
+  FREEHOLD
+  LEASEHOLD
+  OTHER // shows a free-text input in the UI
+}
+
+enum NeighborhoodClass {
+  POSH
+  GOOD
+  MIDDLE
+  POOR
+  UPPER_MIDDLE_CLASS
+  OTHER // shows a free-text input in the UI
+}
+
+enum PropertyType {
+  BUNGLOW
+  SOCIETY
+  BUILDER_FLAT
+  AUTHORITY
+  INDUSTRIAL
+  SHOP
+  OFFICE
+  BUILDER_FLOOR
+  DEVELOPER_APT
+  INDEP_HOUSE
+  OTHER // shows a free-text input in the UI
+}
+
+enum ConstructionType {
+  RCC_FRAMED_STRUCTURE
+  LOAD_BEARING_WALLS
+  MIXED
+  T_IRON
+  TIN_SHED
+  TRUSS
+  OTHER // shows a free-text input in the UI
+}
+
+enum OccupationStatus {
+  APPLICANT_OCCUPIED
+  RENTED
+  SELLER
+  VACANT
+  UNDER_CONSTRUCTION
+  COMPANY_OCCUPIED
+  UNDER_RENOVATION
+  OTHER // shows a free-text input in the UI
+}
+
+enum PropertyUsage {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  SHOP
+  OFFICE
+  VACANT
+  OTHER // shows a free-text input in the UI
+}
+
+enum PropertyLocation {
+  INTERMITTENT
+  CORNER_PLOT
+  MAIN_ROAD
+  INNER_LANE
+  PARKING_FACING
+  OTHER // shows a free-text input in the UI
+}
+
+enum Facility {
+  RAILWAY
+  BUS_STAND
+  HOSPITAL
+  SCHOOL
+  OTHER // shows a free-text input in the UI
+}
+
+enum RoadCondition {
+  DEVELOPED
+  UNDEVELOPED
+  OTHER // shows a free-text input in the UI
+}
+
+enum FloorLevel {
+  BASEMENT
+  STILT
+  GROUND
+  FIRST
+  SECOND
+  THIRD
+  FOURTH_AND_ABOVE
+  MEZZANINE
+}
+
+model SiteVisitReport {
+  id           String     @id @default(cuid())
+  allocationId String     @unique
+  caseId       String
+  engineerId   String
+  allocation   Allocation @relation(fields: [allocationId], references: [id], onDelete: Restrict)
+  case         Case       @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  engineer     User       @relation(fields: [engineerId], references: [id], onDelete: Restrict)
+
+  // ── Multi-step form progress (7 steps)
+  currentStep    Int       @default(1)
+  completedSteps Int[]     @default([])
+  isDraft        Boolean   @default(true)
+  submittedAt    DateTime?
+  formData       Json
+
+  // ── Case and address snapshot (step 1)
+  caseInfo               Json?
+  addressAsPerInitiation Json?
+  addressAsPerSite       Json?
+  sameAsInitiation       Boolean @default(false)
+
+  // ── Person Meet At The Site (step 2)
+  personName         String?
+  personContact      String?
+  relationWithClient String?
+
+  // ── Classification (checkbox groups => enum arrays)
+  localityTypes      LocalityType[]
+  localityOther      String? // filled only when OTHER is selected
+  colonyTypes        ColonyType[]
+  colonyOther        String? // filled only when OTHER is selected
+  ownershipTypes     OwnershipType[]
+  ownershipOther     String? // filled only when OTHER is selected
+  neighborhoodClass  NeighborhoodClass[]
+  neighborhoodOther  String? // filled only when OTHER is selected
+  propertyTypes      PropertyType[]
+  propertyTypeOther  String? // filled only when OTHER is selected
+  constructionTypes  ConstructionType[]
+  constructionOther  String? // filled only when OTHER is selected
+  occupationStatuses OccupationStatus[]
+  occupationOther    String? // filled only when OTHER is selected
+
+  // ── If Rented, Details Of Rented Area & Rent
+  numberOfTenants Int?
+  tenantName      String?
+  occupiedSince   String?
+  purposeOfUse    String?
+  rentArea        String?
+  rentPayable     Decimal? @db.Decimal(14, 2)
+
+  // ── Property Usage / Location (step 3)
+  propertyUsages        PropertyUsage[]
+  propertyUsageOther    String? // filled only when OTHER is selected
+  propertyLocations     PropertyLocation[]
+  propertyLocationOther String? // filled only when OTHER is selected
+
+  // ── How It Cover On (Direction)
+  boundaryEast  String?
+  boundaryWest  String?
+  boundaryNorth String?
+  boundarySouth String?
+
+  // ── Property details
+  electricityDocumentSeen String? // Electricity Bill/Plan/Estimate Or Other Document Seen At Site
+  electricityMeterInfo    String? // Electricity Meter Seen At Site, Meter Number if shown
+  plotAreaWithDimension   String?
+  plotMeasured            Boolean?
+  plotNotMeasuredReason   String?
+  floorOfFlat             String?
+  yearOfConstruction      Int?
+  entirePropertyShown     Boolean?
+  internalPicsTaken       Boolean?
+  numberOfFloors          Int?
+  unitsOnEachFloor        String?
+  liftStairsBoth          String?
+
+  // ── Facilities / Road
+  facilities         Facility[]
+  facilitiesOther    String? // filled only when OTHER is selected
+  roadCondition      RoadCondition[]
+  roadConditionOther String? // filled only when OTHER is selected
+
+  // ── Miscellaneous (page 5)
+  internalFinish           String?
+  externalFinish           String?
+  measuredRoadWidth        String?
+  developmentInLocalityPct Decimal? @db.Decimal(5, 2)
+  occupancyInLocalityPct   Decimal? @db.Decimal(5, 2)
+  communityAreaPct         Decimal? @db.Decimal(5, 2)
+  communityName            String?
+  propertyIdentifiable     String? // Identifiable & How
+  propertyDemarcated       String?
+  landmark                 String?
+  distanceFromLandmark     String?
+  marketLandRateInLocality String?
+  rentalRangePM            String?
+  marketRateOfFlat         String?
+  marketRateOfFloor        String?
+  marketRateOfShop         String?
+  propertyDealerNumber1    String?
+  propertyDealerNumber2    String?
+  mainRoadDistance         String?
+
+  // ── Remarks (page 6)
+  negativeRemarks          String?
+  positiveRemarks          String?
+  visitedFromOutsideReason String?
+  reportHighlights         String?
+
+  floorAreas FloorWiseArea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Floor Wise : Built Up Area table (page 4)
+/// More columns may exist beyond "Occupancy" (table scrolls horizontally)
+model FloorWiseArea {
+  id       String          @id @default(cuid())
+  reportId String
+  report   SiteVisitReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  floor         FloorLevel
+  accommodation String?
+  carpetCovered String?
+  occupancy     String?
+  purpose       String?
+
+  @@unique([reportId, floor])
+}

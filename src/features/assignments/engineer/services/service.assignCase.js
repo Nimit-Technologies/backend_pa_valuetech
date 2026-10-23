@@ -8,35 +8,79 @@ import {
   updatedBySnapshotFields,
 } from "../../../case/utils/case-history.js";
 
-// Assigns or reassigns the engineer.
-//
-// `statusId`/`statusCode` are supplied only when the assignment also advances
-// the lifecycle — an `open` case moving to `assigned_to_engineer`. A
-// reassignment leaves the status where it is, so the work already done is not
-// discarded.
-//
-// employee_id is case data, so this does write the updated_by_* snapshot.
 export const assignCase = async (
   id,
-  { employee_id, statusId, statusCode, previousStatusCode, isReassignment },
+  {
+    employee_id,
+    employeeUserId,
+    roleId,
+    statusId,
+    businessTypeId,
+    branchId,
+    previousEmployeeId,
+    expectedStatusId,
+    statusCode,
+    previousStatusCode,
+    isReassignment,
+  },
   actor,
 ) => {
-  const caseRecord = await prisma.case.update({
-    where: { id },
-    data: {
-      employee: { connect: { employee_id } },
-      ...(statusId && { status: { connect: { id: statusId } } }),
-      ...updatedBySnapshotFields(actor),
-      update_history: {
-        create: createCaseHistoryEntry(actor, {
-          action: isReassignment ? "reassign" : "assign",
-          from: previousStatusCode,
-          to: statusCode ?? previousStatusCode,
-        }),
-      },
-    },
-    include: caseInclude,
-  });
+  const caseRecord = await prisma.$transaction(
+    async (tx) => {
+      let updatedCase;
+      try {
+        updatedCase = await tx.case.update({
+          where: {
+            id,
+            employee_id: previousEmployeeId,
+            status_id: expectedStatusId,
+            branch_id: branchId,
+            deleted_at: null,
+          },
+          data: {
+            employee: { connect: { employee_id } },
+            status: { connect: { id: statusId } },
+            ...updatedBySnapshotFields(actor),
+            update_history: {
+              create: createCaseHistoryEntry(actor, {
+                action: isReassignment ? "reassign" : "assign",
+                from: previousStatusCode,
+                to: statusCode ?? previousStatusCode,
+              }),
+            },
+          },
+          include: caseInclude,
+        });
+      } catch (error) {
+        if (error.code === "P2025") return null;
+        throw error;
+      }
 
-  return shapeCase(caseRecord);
+      const { _max } = await tx.allocation.aggregate({
+        where: { case_id: id },
+        _max: { sequence: true },
+      });
+
+      await tx.allocation.create({
+        data: {
+          case_id: id,
+          user_id: employeeUserId,
+          role_id: roleId,
+          status_id: statusId,
+          business_type_id: businessTypeId,
+          allocated_by_id: actor.id,
+          allocated_by_first_name: actor.first_name,
+          allocated_by_employee_id: actor.employee_id,
+          allocated_by_role: actor.role,
+          allocated_by_department: actor.department,
+          sequence: (_max.sequence ?? 0) + 1,
+        },
+      });
+
+      return updatedCase;
+    },
+    { isolationLevel: "Serializable" },
+  );
+
+  return caseRecord ? shapeCase(caseRecord) : null;
 };

@@ -7,12 +7,13 @@ export const ROLE = {
   SUPER_ADMIN: "super admin",
   BRANCH_ADMIN: "branch admin",
   CORDINATOR: "cordinator",
+  ENGINEER: "engineer",
 };
 
 const DEPARTMENT = {
   CORDINATION: "cordination",
   MANAGEMENT: "management",
-  TECHNICAL: "engineer",
+  TECHNICAL: "technical",
   BACK_OFFICE: "back office",
 };
 

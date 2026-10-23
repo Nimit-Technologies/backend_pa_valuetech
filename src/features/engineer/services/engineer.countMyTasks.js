@@ -6,8 +6,12 @@ const buildTaskFilter = (userId, caseFilter) => ({
   case: caseFilter,
 });
 
-export const countMyTasks = async ({ userId, branchId }) => {
-  const caseFilter = { deleted_at: null, branch_id: branchId };
+export const countMyTasks = async ({ userId, branchId, employeeId }) => {
+  const caseFilter = {
+    deleted_at: null,
+    branch_id: branchId,
+    employee_id: employeeId,
+  };
   const base = buildTaskFilter(userId, caseFilter);
 
   const [total, active, visit_completed, report_completed] = await Promise.all([

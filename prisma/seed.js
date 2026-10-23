@@ -4,17 +4,6 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/index.js";
 import { SYSTEM_STATUSES } from "../src/constant/case-status.js";
 
-// Seeds the ten system statuses. A super admin may add more through the API and
-// may rename these, but they must exist with the right `code` and `is_terminal`
-// or the case lifecycle has no starting point and the terminal freeze silently
-// stops applying.
-//
-// Idempotent: keyed on `code`, so re-running is safe. An existing row keeps its
-// edited `name` and `sort_order` — only `is_terminal` is re-asserted, because a
-// wrong value there fails silently rather than loudly.
-
-// A standalone client rather than src/prisma/client.js: that module connects and
-// calls process.exit as an import side effect, which a script should own itself.
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
