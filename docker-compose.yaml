@@ -45,7 +45,6 @@ services:
       PORT: ${PORT:-5000}
       APP_PROTOCOL: ${APP_PROTOCOL:-http}
       APP_BASE_URL: ${APP_BASE_URL}
-      IP_ADDRESS: ${IP_ADDRESS:-}
       DATA_LIMIT: ${DATA_LIMIT:-10}
       DATABASE_URL: ${DATABASE_URL}
       DIRECT_URL: ${DIRECT_URL}
