@@ -12,9 +12,16 @@ export default defineConfig({
     seed: "node prisma/seed.js",
   },
   datasource: {
+    // Migrations need the direct (port 5432) connection — Supabase's pooler
+    // runs in transaction mode, which cannot hold the advisory lock or the
+    // session state that `prisma migrate` depends on.
+    //
+    // Production stays strict: no DIRECT_URL means the migration fails loudly
+    // rather than quietly running through the pooler. Development falls back
+    // to DATABASE_URL so a local Postgres with one connection string works.
     url:
       process.env.NODE_ENV === "production"
         ? process.env.DIRECT_URL
-        : process.env.DATABASE_URL,
+        : (process.env.DIRECT_URL ?? process.env.DATABASE_URL),
   },
 });
