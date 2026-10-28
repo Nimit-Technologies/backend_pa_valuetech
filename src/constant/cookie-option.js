@@ -60,6 +60,14 @@ function resolveTokenTtlMs() {
 // drift apart.
 export const TOKEN_TTL_SECONDS = Math.floor(resolveTokenTtlMs() / 1000);
 
+// sameSite: "strict" is a deployment constraint, not just a default — the
+// frontend and this API must share a registrable domain (app.example.com and
+// api.example.com are fine; two unrelated domains are not). Deployed
+// cross-site, the browser withholds the cookie on every request and login
+// appears to succeed and then 401 forever, with nothing in the API logs.
+//
+// Relaxing this to "none" is not a one-line change: SameSite is currently the
+// only CSRF protection here, so "none" needs a CSRF token layer landed first.
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
