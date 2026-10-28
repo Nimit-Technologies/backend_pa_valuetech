@@ -16,7 +16,11 @@ const seedStatuses = async () => {
   } of SYSTEM_STATUSES) {
     await prisma.status.upsert({
       where: { code },
-      update: { is_terminal },
+      // sort_order is structural — it is the order the workflow reads in, so
+      // code owns it and the seed repairs drift. `name` is deliberately not
+      // updated: a super admin may rename a status, and overwriting that on
+      // every deploy would undo their change silently.
+      update: { is_terminal, sort_order },
       create: { code, name, sort_order, is_terminal },
     });
   }
