@@ -150,6 +150,20 @@ export const engineerAssignCase = async (req, res, next) => {
       data: formatCaseResponse(caseRecord),
     });
   } catch (error) {
+    // Two coordinators assigning the same case at once race past the guard
+    // above and are stopped by the database instead: Serializable isolation
+    // raises P2034, and the unique (case_id, sequence) index raises P2002 when
+    // both transactions computed the same next sequence. That is the same
+    // conflict the optimistic check reports as 409, caught one layer deeper.
+    // Reporting it as 500 tells the caller the server is broken, when the
+    // correct advice is the one the 409 already gives: refresh and retry.
+    if (error.code === "P2002" || error.code === "P2034") {
+      return res.status(409).json({
+        success: false,
+        message: "Case changed while assigning. Refresh and try again.",
+      });
+    }
+
     console.error("assignCase error:", error);
     res.status(500).json({ success: false, message: "Failed to assign case" });
   }
