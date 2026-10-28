@@ -16,9 +16,16 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-# Full install (incl. devDependencies) — the "prisma" CLI is a devDependency
-# and postinstall runs `prisma generate` against prisma/schema.
-RUN npm ci
+# Production dependencies only. The "prisma" CLI still arrives despite being a
+# devDependency, because @prisma/client declares it as a peerDependency
+# ("prisma": "*") and npm installs peers automatically — so postinstall's
+# `prisma generate` runs here, and `prisma migrate deploy` stays available in
+# the runtime image for Coolify's pre-deployment step.
+#
+# The build tools above remain the fallback for bcrypt: --omit=dev drops dev
+# packages, not install scripts, so bcrypt still fetches its prebuild or
+# compiles from source.
+RUN npm ci --omit=dev
 
 # ---- runtime: minimal image that actually serves traffic ----
 FROM node:${NODE_VERSION} AS runtime
