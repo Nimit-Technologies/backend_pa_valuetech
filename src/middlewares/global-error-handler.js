@@ -1,12 +1,25 @@
 import { AppError } from "../utils/app-error.js";
 import { ZodError } from "zod";
 
-const sendErrorDev = (err, res) => {
-  const statusCode = err instanceof AppError ? err.statusCode : 500;
+// body-parser and anything else built on `http-errors` report the HTTP code as
+// a number on `status` (and usually `statusCode` too), and set `expose: true`
+// when the message is safe to hand back. AppError uses `status` for its
+// "fail" / "error" label instead, so the numeric code has to be read from
+// whichever field actually holds a number rather than from `status` alone.
+const httpStatusOf = (err) => {
+  for (const candidate of [err.statusCode, err.status]) {
+    if (Number.isInteger(candidate) && candidate >= 400 && candidate <= 599) {
+      return candidate;
+    }
+  }
 
-  res.status(statusCode).json({
+  return 500;
+};
+
+const sendErrorDev = (err, res) => {
+  res.status(err.statusCode).json({
     success: false,
-    status: err instanceof AppError ? err.status : "error",
+    status: err.status,
     error: err,
     message: err.message,
     stack: err.stack,
@@ -31,6 +44,18 @@ const sendErrorProd = (err, res) => {
       errors: err.errors || err.issues,
     });
   }
+  // Malformed JSON, an oversized body, an unsupported charset: the client's
+  // mistake, not the server's. Reporting these as 500 tells the caller to
+  // retry something that can never succeed, and buries real server faults in
+  // the same metric. `expose` is http-errors' own signal that the message is
+  // safe to return.
+  else if (err.expose && err.statusCode < 500) {
+    res.status(err.statusCode).json({
+      success: false,
+      status: "fail",
+      message: err.message,
+    });
+  }
   // Programming or other unknown error: don't leak details
   else {
     // 1) Log error
@@ -52,8 +77,13 @@ export const globalErrorHandler = (err, req, res, next) => {
     });
   }
 
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
+  err.statusCode = httpStatusOf(err);
+
+  // AppError sets this to "fail" / "error"; a numeric `status` left by
+  // http-errors would otherwise be echoed back in the body as if it were one.
+  if (typeof err.status !== "string") {
+    err.status = err.statusCode >= 500 ? "error" : "fail";
+  }
 
   if (process.env.NODE_ENV === "development") {
     sendErrorDev(err, res);
