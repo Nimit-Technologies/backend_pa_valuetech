@@ -1,0 +1,12 @@
+# Check every text file out with LF, on every platform.
+#
+# Without this, core.autocrlf=true gives a Windows clone CRLF working files
+# while the index holds LF. Prettier defaults to endOfLine: "lf", so it reports
+# every file in the repo as needing reformatting and `npm run check` fails on a
+# clean checkout — which means the check carries no signal, and a real
+# formatting regression is indistinguishable from the noise. Running
+# `npm run format` appears to fix it and then commits nothing, because git
+# normalises the line endings straight back out again.
+#
+# The frontend repo already carries this file; the backend was missing it.
+* text=auto eol=lf
