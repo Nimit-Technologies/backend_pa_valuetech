@@ -29,7 +29,14 @@ RUN npm ci --omit=dev
 
 # ---- runtime: minimal image that actually serves traffic ----
 FROM node:${NODE_VERSION} AS runtime
-ENV NODE_ENV=production
+# TZ: the image would otherwise run UTC, and this is a single-region product —
+# every user, branch and report is in India. src/utils/format-date-time.js no
+# longer depends on this (it names Asia/Kolkata explicitly), but anything else
+# that reads the local clock — log lines, a bare `new Date()` in a later
+# feature — should agree with what the API reports rather than sit 5h30m away
+# from it.
+ENV NODE_ENV=production \
+    TZ=Asia/Kolkata
 WORKDIR /app
 
 # Coolify's own healthcheck runs `curl`/`wget` via `docker exec`, independent

@@ -1,16 +1,8 @@
-/**
- * Helper to format date to YYYY-MM-DD HH:mm:ss
- */
-const pad = (n) => String(n).padStart(2, "0");
-
-export const formatDateTime = (date = new Date()) => {
-  if (!date) return null;
-  const dObj = new Date(date);
-  if (isNaN(dObj.getTime())) return null;
-  const d = `${dObj.getFullYear()}-${pad(dObj.getMonth() + 1)}-${pad(dObj.getDate())}`;
-  const t = `${pad(dObj.getHours())}:${pad(dObj.getMinutes())}:${pad(dObj.getSeconds())}`;
-  return `${d} ${t}`;
-};
+// Re-exported so every existing `import { formatDateTime } from "<this file>"`
+// keeps working; the implementation (and its Asia/Kolkata handling) lives in
+// one place now.
+export { formatDateTime } from "../../../utils/format-date-time.js";
+import { formatDateTime } from "../../../utils/format-date-time.js";
 
 const relationName = (value) => {
   if (typeof value === "object" && value?.name) return value.name;
