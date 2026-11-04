@@ -9,6 +9,16 @@ const parsedSimilarityThreshold = Number.parseFloat(
   process.env.ADDRESS_SIMILARITY_THRESHOLD,
 );
 
+const parsedUploadMaxFileSizeMb = parseInt(
+  process.env.UPLOAD_MAX_FILE_SIZE_MB,
+  10,
+);
+
+const UPLOAD_MAX_FILE_SIZE_MB =
+  Number.isFinite(parsedUploadMaxFileSizeMb) && parsedUploadMaxFileSizeMb > 0
+    ? parsedUploadMaxFileSizeMb
+    : 10;
+
 // pg_trgm's cutoff for "this address resembles that one", applied with
 // set_limit() before the similar-case query runs.
 //
@@ -61,4 +71,11 @@ export const CREDENTIALS = {
   // JWT_SECRET / PEPPER_SECRET.
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
   BLIND_INDEX_KEY: process.env.BLIND_INDEX_KEY,
+
+  // Supabase Storage (case file uploads, src/features/uploads). The service
+  // role key is server-only — see src/config/supabase-storage.client.js.
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET || "pa_assets",
+  UPLOAD_MAX_FILE_SIZE_MB,
 };

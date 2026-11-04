@@ -62,6 +62,7 @@ model Case {
   remarks            Remark[]
   allocations        Allocation[]
   site_visit_reports SiteVisitReport[]
+  case_files         CaseFile[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt

@@ -1,0 +1,37 @@
+// Case documents (engineer and coordinator uploads), stored in the private
+// Supabase Storage bucket `pa_assets` at `<branch_id>/<case_id>/<storage_path's
+// file name>`. The row is the only source of truth for where a file lives —
+// storage_path is written once by the upload that created it and is never
+// changed afterward, even if the case is later moved to a different branch
+// (see src/features/uploads/utils/storage-key.js).
+model CaseFile {
+  id String @id @default(cuid())
+
+  case_id String
+  case    Case   @relation(fields: [case_id], references: [id], onDelete: Restrict)
+
+  // Snapshot of the case's branch at upload time — copied, not joined, and
+  // deliberately not a foreign key to Branch. A case moving branches later
+  // must not retroactively change where an already-written file is filed.
+  branch_id String
+
+  storage_path  String @unique
+  original_name String
+  mime_type     String
+  size_bytes    Int
+
+  uploaded_by_id String
+  uploaded_by    User   @relation(fields: [uploaded_by_id], references: [id], onDelete: Restrict)
+
+  // Role name at upload time, snapshotted like Allocation.allocated_by_role —
+  // must not change if the uploader's role is edited afterward.
+  uploader_role String
+
+  uploaded_at DateTime  @default(now())
+  deleted_at  DateTime?
+
+  @@index([case_id])
+  @@index([branch_id])
+  @@index([uploaded_by_id])
+  @@map("case_files")
+}

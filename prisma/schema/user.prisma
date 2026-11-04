@@ -40,6 +40,7 @@ model User {
   allocations        Allocation[]      @relation("AllocationUser")
   allocations_made   Allocation[]      @relation("AllocationAllocatedBy")
   site_visit_reports SiteVisitReport[]
+  case_files         CaseFile[]
 
   password_reset_tokens PasswordResetToken[]
 

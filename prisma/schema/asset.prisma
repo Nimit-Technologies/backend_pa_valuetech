@@ -1,0 +1,47 @@
+// Backs the engineer report's "Report Photos" step (frontend
+// ResumableUpload/Step7). The file itself is already in Supabase Storage by
+// the time a row is written here — the frontend uploads directly to Supabase
+// via the resumable (TUS) protocol with a publishable key, so this table is
+// metadata bookkeeping only, not a record of a server-mediated write the way
+// CaseFile is (see case_file.prisma — that bucket is written by the service
+// role and read only via short-lived signed URLs; this is a deliberately
+// different, more trusting model gated by Supabase's own RLS, not this API).
+enum PhotoType {
+  RoadApproachPhoto
+  OutsidePhoto
+  NamePlatePhoto
+  MeterPhoto
+  SelfiePhoto
+  AdditionalPhoto
+}
+
+model Asset {
+  id String @id @default(cuid())
+
+  task_id String
+  task    Allocation @relation(fields: [task_id], references: [id], onDelete: Restrict)
+
+  // Snapshot of the allocation's case_id, kept alongside task_id so assets
+  // can be queried by case without a join through Allocation. Allocation's
+  // case_id never changes after creation — a reassignment creates a new
+  // Allocation row (see allocation.prisma) — so this can't drift.
+  case_id String
+
+  // Snapshot of the uploader's employee_id, the same idea as
+  // CaseFile.uploader_role: not a foreign key, so it still reflects who
+  // uploaded the file if their record changes later.
+  employee_id String
+
+  photo_type PhotoType
+
+  object_url  String
+  object_id   String
+  object_name String
+
+  created_at DateTime  @default(now())
+  deleted_at DateTime?
+
+  @@index([task_id])
+  @@index([case_id])
+  @@map("assets")
+}

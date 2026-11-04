@@ -5,7 +5,10 @@ import prisma from "../../../prisma/client.js";
 //
 // Allocation.case and CaseUpdateHistory.case are both onDelete: Restrict, so
 // a bare case.delete() fails with P2003 on any case that has ever been saved
-// (create writes a history row). Both tables' rows belong to this case and
+// (create writes a history row). SiteVisitReport is Restrict on *both* its
+// case and allocation relations, and Asset is Restrict on its allocation
+// (task_id) relation — so both must be cleared before Allocation, and
+// SiteVisitReport before Case too. Every table here belongs to this case and
 // nothing else, so they are cleared inside the same transaction: either the
 // case and its children all go, or nothing does.
 //
@@ -14,6 +17,8 @@ import prisma from "../../../prisma/client.js";
 // all on the parent side of their relations and are left untouched.
 export const developerDeleteCase = (id) => {
   return prisma.$transaction(async (tx) => {
+    await tx.asset.deleteMany({ where: { case_id: id } });
+    await tx.siteVisitReport.deleteMany({ where: { caseId: id } });
     await tx.allocation.deleteMany({ where: { case_id: id } });
     await tx.caseUpdateHistory.deleteMany({ where: { case_id: id } });
     return tx.case.delete({ where: { id } });

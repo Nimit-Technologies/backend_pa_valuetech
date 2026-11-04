@@ -3,6 +3,7 @@ import { softDeleteUser as softDeleteUserService } from "../services/service.sof
 import { respondIfHoldingActiveCases } from "../services/service.checkCaseLoad.user.js";
 import { isValidCuid, looksLikeAnId } from "../../../utils/is-valid-cuid.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
+import { ROLE } from "../../../middlewares/authorize.js";
 import {
   createUserHistoryEntry,
   formatUserResponse,
@@ -35,6 +36,22 @@ export const softDeleteUser = async (req, res, next) => {
       return res
         .status(409)
         .json({ success: false, message: "User is already deleted" });
+    }
+
+    // A super admin can't be soft-deleted — not even by themselves — since
+    // that would strip the branch/org of its top-level admin with no way to
+    // restore access short of a DB-level fix.
+    if (req.user?.id === existing.id) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot soft-delete your own account",
+      });
+    }
+    if (existing.role?.name?.trim().toLowerCase() === ROLE.SUPER_ADMIN) {
+      return res.status(403).json({
+        success: false,
+        message: "Super admin accounts cannot be soft-deleted",
+      });
     }
 
     // Same reasoning as deactivation: a soft-deleted user cannot log in, so any
