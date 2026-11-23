@@ -147,6 +147,48 @@ test("an engineer cannot close, reopen or cancel a case", () => {
   assert.ok(!REVERSE_CANCEL.roles.includes(ROLE.ENGINEER));
 });
 
+test("an engineer can move between any two of their statuses", async () => {
+  const { checkTransition } =
+    await import("../src/features/case/utils/case-transition-rules.js");
+  const { ENGINEER_STATUS_CODES } =
+    await import("../src/constant/case-transitions.js");
+
+  const froms = [STATUS_CODE.ASSIGNED_TO_ENGINEER, ...ENGINEER_STATUS_CODES];
+  for (const from of froms) {
+    for (const to of ENGINEER_STATUS_CODES) {
+      if (from === to) continue;
+      assert.deepEqual(
+        checkTransition({ from, to, role: ROLE.ENGINEER }),
+        { ok: true },
+        `engineer ${from} -> ${to}`,
+      );
+    }
+  }
+});
+
+test("a coordinator's revisit still needs a reason despite the engineer edge", async () => {
+  const { checkTransition, TRANSITION_DENIED } =
+    await import("../src/features/case/utils/case-transition-rules.js");
+
+  assert.deepEqual(
+    checkTransition({
+      from: STATUS_CODE.VISIT_COMPLETED,
+      to: STATUS_CODE.VISIT_SCHEDULE,
+      role: ROLE.CORDINATOR,
+    }),
+    { ok: false, denied: TRANSITION_DENIED.REASON_REQUIRED },
+  );
+  // And a coordinator still cannot drive the engineer's own field steps.
+  assert.deepEqual(
+    checkTransition({
+      from: STATUS_CODE.VISIT_SCHEDULE,
+      to: STATUS_CODE.VISIT_IN_PROGRESS,
+      role: ROLE.CORDINATOR,
+    }),
+    { ok: false, denied: TRANSITION_DENIED.ROLE_NOT_ALLOWED },
+  );
+});
+
 test("the cancel rules are shaped like the edges they stand in for", () => {
   assert.equal(CANCEL_FROM_ANY_NON_TERMINAL.to, STATUS_CODE.CANCELLED);
   assert.equal(CANCEL_FROM_ANY_NON_TERMINAL.reasonRequired, true);

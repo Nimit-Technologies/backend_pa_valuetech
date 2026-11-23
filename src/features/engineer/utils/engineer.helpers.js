@@ -4,6 +4,7 @@ import {
   bankSelect,
   addressListSelect,
 } from "../../case/services/case.service.helpers.js";
+import { isReportSubmitted } from "../services/engineer.reportLock.js";
 
 // The engineer's task list is rooted on Allocation, not Case: one task IS one
 // allocation. Rooting it on Case would bury the two fields this screen is built
@@ -19,6 +20,10 @@ export const taskSelect = {
   sequence: true,
   allocated_at: true,
   completed_at: true,
+
+  // Only the lock-relevant fields: the row needs to know whether the status
+  // dropdown is still the engineer's, not the report body.
+  site_visit_report: { select: { isDraft: true, submittedAt: true } },
 
   case: {
     select: {
@@ -61,7 +66,9 @@ export const shapeTask = (allocation) => {
     completed_at,
     case: caseRecord,
     allocated_by,
+    site_visit_report,
   } = allocation;
+  const reportSubmitted = isReportSubmitted(site_visit_report);
 
   return {
     task_id: id,
@@ -80,6 +87,13 @@ export const shapeTask = (allocation) => {
     status: caseRecord?.status ?? null,
     bank: caseRecord?.bank ?? null,
     address: caseRecord?.address ?? null,
+
+    // Once true the engineer can no longer change this case's status; the
+    // transition endpoint enforces it, this flag lets the UI say so up front.
+    report_submitted: reportSubmitted,
+    report_submitted_at: reportSubmitted
+      ? formatDateTime(site_visit_report.submittedAt)
+      : null,
 
     // Whoever handed this engineer the task. Named for the act, not the role:
     // isBranchAdminOrCoordinator guards the assign route, so this is not always

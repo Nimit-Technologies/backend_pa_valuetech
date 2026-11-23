@@ -365,6 +365,29 @@ export const mapReportDraft = (stepData) => {
   };
 };
 
+const ADDRESS_KEYS = [
+  "city",
+  "district",
+  "state",
+  "pin_code",
+  "country",
+  "lane",
+  "landmark",
+];
+
+// Shaped exactly like the client's step1 payload so the stored formData
+// round-trips into the form unchanged.
+export const caseOwnedStep1 = (caseRecord) => ({
+  caseInfo: {
+    file_number: caseRecord?.file_number ?? "",
+    customer_name: caseRecord?.customer_name ?? "",
+    customer_phone_number: caseRecord?.customer_contact_number ?? "",
+  },
+  addressAsPerInitiation: Object.fromEntries(
+    ADDRESS_KEYS.map((key) => [key, caseRecord?.address?.[key] ?? ""]),
+  ),
+});
+
 export const saveMyReport = async ({
   taskId,
   userId,
@@ -389,12 +412,46 @@ export const saveMyReport = async ({
           branch_id: branchId,
         },
       },
-      select: { id: true, case_id: true, user_id: true },
+      select: {
+        id: true,
+        case_id: true,
+        user_id: true,
+        case: {
+          select: {
+            file_number: true,
+            customer_name: true,
+            customer_contact_number: true,
+            address: {
+              select: {
+                lane: true,
+                landmark: true,
+                city: true,
+                district: true,
+                state: true,
+                pin_code: true,
+                country: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!allocation) {
       throw new AppError("Task not found", 404);
     }
+
+    // The case-owned fields are read-only for the engineer: whatever the client
+    // sent, the report records what is on the case right now.
+    const { caseInfo, addressAsPerInitiation } = caseOwnedStep1(
+      allocation.case,
+    );
+    report.caseInfo = caseInfo;
+    report.addressAsPerInitiation = addressAsPerInitiation;
+    const lockedStepData = {
+      ...stepData,
+      step1: { ...stepData.step1, caseInfo, addressAsPerInitiation },
+    };
 
     const existing = await transaction.siteVisitReport.findUnique({
       where: { allocationId: allocation.id },
@@ -409,7 +466,7 @@ export const saveMyReport = async ({
       completedSteps,
       isDraft: action === "draft",
       submittedAt: action === "submit" ? new Date() : null,
-      formData: JSON.parse(JSON.stringify(stepData)),
+      formData: JSON.parse(JSON.stringify(lockedStepData)),
       ...report,
     };
     const savedReport = await transaction.siteVisitReport.upsert({

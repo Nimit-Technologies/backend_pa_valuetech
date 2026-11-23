@@ -15,11 +15,37 @@ import { STATUS_CODE } from "./case-status.js";
 // sort_order is NOT the rule — backward edges are legitimate and enumerated
 // below. Reading legality out of sort_order would make visit_hold impossible.
 
-const ENGINEER = "engineer";
+const ENGINEER = ROLE.ENGINEER;
 const COORDINATION = [ROLE.CORDINATOR, ROLE.BRANCH_ADMIN];
 const BRANCH_ADMIN_ONLY = [ROLE.BRANCH_ADMIN];
 
+// The statuses an engineer works through on an assigned case. Within this set
+// the engineer moves freely, in any direction — the field order is not
+// strictly linear (holds, a second visit before reporting, correcting a
+// mis-click), and the engineer's status dropdown offers exactly these. The
+// lock that matters is the report: once it is submitted the engineer cannot
+// change status at all (see engineer.reportLock.js, checked by the endpoint).
+export const ENGINEER_STATUS_CODES = Object.freeze([
+  STATUS_CODE.VISIT_SCHEDULE,
+  STATUS_CODE.VISIT_HOLD,
+  STATUS_CODE.VISIT_IN_PROGRESS,
+  STATUS_CODE.VISIT_COMPLETED,
+  STATUS_CODE.REPORT_IN_PROGRESS,
+  STATUS_CODE.REPORT_COMPLETED,
+]);
+
+const engineerEdgesFrom = (from) =>
+  ENGINEER_STATUS_CODES.filter((to) => to !== from).map((to) => ({
+    to,
+    roles: [ENGINEER],
+  }));
+
 // from -> [{ to, roles, reasonRequired }]
+//
+// One from/to pair may carry two edges with different roles (e.g. a
+// coordinator's revisit needs a reason, the engineer's own move does not);
+// checkTransition picks the edge that names the caller's role. Coordination
+// edges are listed first.
 export const CASE_TRANSITIONS = Object.freeze({
   [STATUS_CODE.OPEN]: [
     { to: STATUS_CODE.ASSIGNED_TO_ENGINEER, roles: COORDINATION },
@@ -28,26 +54,16 @@ export const CASE_TRANSITIONS = Object.freeze({
   [STATUS_CODE.ASSIGNED_TO_ENGINEER]: [
     // Unassign — returns the case to the coordinator's queue.
     { to: STATUS_CODE.OPEN, roles: COORDINATION },
-    { to: STATUS_CODE.VISIT_SCHEDULE, roles: [ENGINEER] },
+    ...engineerEdgesFrom(STATUS_CODE.ASSIGNED_TO_ENGINEER),
   ],
 
-  [STATUS_CODE.VISIT_SCHEDULE]: [
-    { to: STATUS_CODE.VISIT_HOLD, roles: [ENGINEER] },
-    { to: STATUS_CODE.VISIT_IN_PROGRESS, roles: [ENGINEER] },
-  ],
+  [STATUS_CODE.VISIT_SCHEDULE]: engineerEdgesFrom(STATUS_CODE.VISIT_SCHEDULE),
 
-  // Hold is a parallel state rather than a step: a case can be held from
-  // either side and resumes to whichever it came from. The previous status is
-  // read from the transition history, so no column is needed to remember it.
-  [STATUS_CODE.VISIT_HOLD]: [
-    { to: STATUS_CODE.VISIT_SCHEDULE, roles: [ENGINEER] },
-    { to: STATUS_CODE.VISIT_IN_PROGRESS, roles: [ENGINEER] },
-  ],
+  [STATUS_CODE.VISIT_HOLD]: engineerEdgesFrom(STATUS_CODE.VISIT_HOLD),
 
-  [STATUS_CODE.VISIT_IN_PROGRESS]: [
-    { to: STATUS_CODE.VISIT_HOLD, roles: [ENGINEER] },
-    { to: STATUS_CODE.VISIT_COMPLETED, roles: [ENGINEER] },
-  ],
+  [STATUS_CODE.VISIT_IN_PROGRESS]: engineerEdgesFrom(
+    STATUS_CODE.VISIT_IN_PROGRESS,
+  ),
 
   [STATUS_CODE.VISIT_COMPLETED]: [
     // Revisit — the site data was insufficient.
@@ -56,14 +72,12 @@ export const CASE_TRANSITIONS = Object.freeze({
       roles: COORDINATION,
       reasonRequired: true,
     },
-    // The assigned engineer carries the case through reporting; when a drafter
-    // role is introduced, this edge and the next move to them.
-    { to: STATUS_CODE.REPORT_IN_PROGRESS, roles: [ENGINEER] },
+    ...engineerEdgesFrom(STATUS_CODE.VISIT_COMPLETED),
   ],
 
-  [STATUS_CODE.REPORT_IN_PROGRESS]: [
-    { to: STATUS_CODE.REPORT_COMPLETED, roles: [ENGINEER] },
-  ],
+  [STATUS_CODE.REPORT_IN_PROGRESS]: engineerEdgesFrom(
+    STATUS_CODE.REPORT_IN_PROGRESS,
+  ),
 
   [STATUS_CODE.REPORT_COMPLETED]: [
     // Rework — the report came back from review.
@@ -73,6 +87,7 @@ export const CASE_TRANSITIONS = Object.freeze({
       reasonRequired: true,
     },
     { to: STATUS_CODE.CLOSE, roles: COORDINATION },
+    ...engineerEdgesFrom(STATUS_CODE.REPORT_COMPLETED),
   ],
 
   // Reopen. Branch admin only, and the reason is mandatory — a close followed

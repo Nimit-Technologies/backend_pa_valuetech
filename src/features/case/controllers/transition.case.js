@@ -4,7 +4,8 @@ import { findStatusByCode } from "../../status/services/service.getStatusByCode.
 import { transitionCaseSchema } from "../case.schema.js";
 import { respondIfInvalidIdParam } from "../../../utils/validate-id-param.js";
 import { resolveCaseScope } from "../../../utils/case-scope.js";
-import { roleName } from "../../../middlewares/authorize.js";
+import { roleName, ROLE } from "../../../middlewares/authorize.js";
+import { hasSubmittedReportForCase } from "../../engineer/services/engineer.reportLock.js";
 import { logAuthEvent } from "../../../utils/audit-log.js";
 import { STATUS_CODE } from "../../../constant/case-status.js";
 import {
@@ -81,6 +82,19 @@ export const transitionCase = async (req, res, next) => {
 
     const fromCode = existing.status?.code;
     const role = roleName(req);
+
+    // Checked before the transition rules so the engineer gets the real reason
+    // ("you already submitted") rather than a generic edge/role denial.
+    if (
+      role === ROLE.ENGINEER &&
+      (await hasSubmittedReportForCase({ caseId: id, userId: req.user.id }))
+    ) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "The report for this case has been submitted; its status can no longer be changed by the engineer",
+      });
+    }
 
     // Reversing a cancellation is not a free choice of target — the case
     // returns to whatever it was cancelled from, read back from the history.

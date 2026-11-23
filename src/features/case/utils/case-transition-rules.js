@@ -22,10 +22,19 @@ export const checkTransition = ({ from, to, role, reason, isTerminalFrom }) => {
     return { ok: false, denied: TRANSITION_DENIED.NO_SUCH_EDGE };
   }
 
-  const edge =
+  // A from/to pair can have one edge per role group (coordinator revisit with a
+  // reason, engineer's own move without), so prefer the edge naming the
+  // caller's role; otherwise fall back to any edge so the denial is "role not
+  // allowed" rather than "no such edge".
+  const candidates =
     to === STATUS_CODE.CANCELLED && !isTerminalFrom
-      ? CANCEL_FROM_ANY_NON_TERMINAL
-      : (CASE_TRANSITIONS[from] ?? []).find((candidate) => candidate.to === to);
+      ? [CANCEL_FROM_ANY_NON_TERMINAL]
+      : (CASE_TRANSITIONS[from] ?? []).filter(
+          (candidate) => candidate.to === to,
+        );
+  const edge =
+    candidates.find((candidate) => candidate.roles.includes(role)) ??
+    candidates[0];
 
   if (!edge) {
     return { ok: false, denied: TRANSITION_DENIED.NO_SUCH_EDGE };
